@@ -31,21 +31,29 @@ function gaugeSVG(pct: number, verdict: 'authentic' | 'synthetic') {
   </div>`;
 }
 
+interface ResultData {
+  score: number;
+  verdict: 'authentic' | 'synthetic' | string;
+  reason: string;
+}
+
+interface Payload {
+  fileName?: string;
+  previewUrl?: string | null;
+  isImage?: boolean;
+  result?: ResultData;
+  status?: 'starting' | 'pending' | 'done' | 'error';
+  error?: string;
+}
+
 (function main() {
   const id = getQueryParam('id');
   if (!id) { qs('empty').classList.remove('hidden'); return; }
   const key = `result:${id}`;
 
-  function render(payload: any) {
+  function render(payload: Payload | null) {
     if (!payload) { qs('empty').classList.remove('hidden'); return; }
-    const { fileName, previewUrl, isImage, result, status, error } = payload as {
-      fileName?: string;
-      previewUrl?: string | null;
-      isImage?: boolean;
-      result?: { score: number; verdict: 'authentic' | 'synthetic'; reason: string };
-      status?: 'starting' | 'pending' | 'done' | 'error';
-      error?: string;
-    };
+  const { fileName, previewUrl, isImage, result, status, error } = payload;
 
     // Left
     const fileRow = qs('file-row');
@@ -59,8 +67,55 @@ function gaugeSVG(pct: number, verdict: 'authentic' | 'synthetic') {
     const spanIcon = document.createElement('span'); spanIcon.textContent = icon;
     const spanName = document.createElement('span'); spanName.textContent = fileName || 'Untitled';
     fileRow.append(spanIcon, spanName);
-    const imgEl = qs('preview-img') as HTMLImageElement;
-    if (isImage && previewUrl) { imgEl.src = previewUrl; imgEl.classList.remove('hidden'); }
+  const box = qs('preview-box');
+    box.innerHTML = '';
+    const ext = (fileName || '').split('.').pop()?.toLowerCase();
+    if (isImage && previewUrl) {
+      const img = document.createElement('img');
+      img.alt = fileName || 'preview';
+      img.src = previewUrl;
+      img.style.position = 'absolute';
+      img.style.inset = '0';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.classList.remove('hidden');
+      box.appendChild(img);
+  } else if (ext === 'pdf' && previewUrl) {
+      const iframe = document.createElement('iframe');
+      iframe.src = `${previewUrl}#view=FitH`;
+      iframe.title = fileName || 'pdf';
+      iframe.style.position = 'absolute';
+      iframe.style.inset = '0';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = '0';
+      box.style.paddingTop = '0';
+      box.style.height = '520px';
+      box.appendChild(iframe);
+    } else if (previewUrl && previewUrl.startsWith('data:text')) {
+      const iframe = document.createElement('iframe');
+      iframe.src = previewUrl;
+      iframe.title = fileName || 'text';
+      iframe.style.position = 'absolute';
+      iframe.style.inset = '0';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = '0';
+      box.style.paddingTop = '0';
+      box.style.height = '520px';
+      box.appendChild(iframe);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.style.display = 'flex';
+      placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center';
+      placeholder.style.position = 'absolute';
+      placeholder.style.inset = '0';
+      placeholder.style.color = '#6b7280';
+      placeholder.textContent = 'No preview available';
+      box.appendChild(placeholder);
+    }
 
     // Right
     const verdictCard = qs('verdict-card');
@@ -77,14 +132,16 @@ function gaugeSVG(pct: number, verdict: 'authentic' | 'synthetic') {
       return;
     }
     const pct = Math.max(0, Math.min(100, Math.round((result.score || 0) * 100)));
-    const badgeClass = result.verdict === 'authentic' ? 'badge badge-green' : 'badge badge-amber';
-    const verdictTitle = result.verdict === 'authentic' ? 'Authentic Content' : 'Potentially AI-Generated';
+    const isAuthentic = result.verdict === 'authentic';
+    const v: 'authentic' | 'synthetic' = isAuthentic ? 'authentic' : 'synthetic';
+    const badgeClass = isAuthentic ? 'badge badge-green' : 'badge badge-amber';
+    const verdictTitle = isAuthentic ? 'Authentic Content' : 'Potentially AI-Generated';
     verdictCard.innerHTML = `
       <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:${result.verdict === 'authentic' ? '#ecfdf5' : '#fffbeb'}40;">
         <div class="center" style="margin-bottom:12px;">
           <span class="${badgeClass}">${verdictTitle}</span>
         </div>
-        ${gaugeSVG(pct, result.verdict)}
+        ${gaugeSVG(pct, v)}
         <div class="title-row">
           <div class="title">${verdictTitle}</div>
         </div>
@@ -96,7 +153,7 @@ function gaugeSVG(pct: number, verdict: 'authentic' | 'synthetic') {
     qs('content').classList.remove('hidden');
   }
 
-  function getPayload(): any {
+  function getPayload(): Payload | null {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     try { return JSON.parse(raw); } catch { return null; }

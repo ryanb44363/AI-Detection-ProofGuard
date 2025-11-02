@@ -1,10 +1,15 @@
 from io import BytesIO
 import math
 import re
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
-from PIL import Image, ImageStat
 import random
+
+# Pillow is optional at runtime; make import robust so the API can still start
+try:  # pragma: no cover - import guard
+    from PIL import Image  # type: ignore
+except Exception:  # Pillow not available
+    Image = None  # type: ignore
 
 # Optional OCR dependency: easyocr (uses torch/torchvision already present)
 _ocr_reader = None
@@ -21,7 +26,7 @@ AI_KEYWORDS = [
 ]
 
 
-def _shannon_entropy(img: Image.Image) -> float:
+def _shannon_entropy(img: Any) -> float:
     try:
         gray = img.convert("L")
         hist = gray.histogram()
@@ -37,7 +42,7 @@ def _shannon_entropy(img: Image.Image) -> float:
         return 0.0
 
 
-def _extract_metadata_text(img: Image.Image) -> Tuple[str, Dict[str, str]]:
+def _extract_metadata_text(img: Any) -> Tuple[str, Dict[str, str]]:
     parts: List[str] = []
     meta: Dict[str, str] = {}
     try:
@@ -66,7 +71,7 @@ def _extract_metadata_text(img: Image.Image) -> Tuple[str, Dict[str, str]]:
     return "\n".join(parts), meta
 
 
-def _ocr_text(img: Image.Image) -> str:
+def _ocr_text(img: Any) -> str:
     global _ocr_reader
     try:
         if _ocr_reader is None:
@@ -104,6 +109,9 @@ def analyze_image(data: bytes, filename: str = ""):
     file_ext = (filename or "").lower().split(".")[-1]
 
     if file_ext in ["png", "jpg", "jpeg", "gif", "bmp", "webp"]:
+        if Image is None:
+            # Pillow isn't available; return a graceful error instead of crashing app startup
+            return {"score": 0, "verdict": "error", "reason": "Image analysis unavailable: Pillow not installed"}
         try:
             img = Image.open(BytesIO(data))
             width, height = img.size

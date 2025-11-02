@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, Image, File, AlertCircle, Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { analyzeFile } from "../api";
+import type { AnalysisResult as ApiAnalysisResult, AnalyzerDetails } from "../api";
 
 interface AnalysisResult {
   score: number;
@@ -10,12 +11,11 @@ interface AnalysisResult {
 }
 
 export default function UploadForm() {
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  // Minimal UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isImage, setIsImage] = useState<boolean>(false);
+  
   
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -46,40 +46,48 @@ export default function UploadForm() {
       } catch { /* ignore */ }
     }
 
-  // Determine type for preview generation (image/pdf supported)
+  // Determine type for preview generation (image/pdf/text supported)
     const ext = file.name.split(".").pop()?.toLowerCase();
   const img = ["png","jpg","jpeg","gif","bmp","webp","svg"].includes(ext || "");
   const isPdf = ext === 'pdf';
-    setIsImage(img);
+  const textLikeExts = [
+    'txt','md','markdown','csv','tsv','json','log','html','css','js','jsx','ts','tsx','py','java','c','cpp','h','hpp','cs','rb','go','rs','php','sh','yml','yaml','xml','ini','conf','cfg','toml'
+  ];
+  const isTextLike = textLikeExts.includes(ext || '') || (file.type || '').startsWith('text/');
     setFileName(file.name);
     setError(null);
     setLoading(true);
-    setResult(null);
-    // Prepare preview data URL for images or PDFs (so new tab can render without blob revocation)
+    
+    // Prepare preview data URL for images, PDFs, or text (so new tab can render without blob revocation)
     let previewDataUrl: string | null = null;
-    if (img || isPdf) {
+    if (img || isPdf || isTextLike) {
       try {
-        previewDataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error("Failed to read file for preview"));
-          reader.readAsDataURL(file);
-        });
-        setPreviewUrl(previewDataUrl);
-      } catch {
-        setPreviewUrl(null);
-      }
-    } else {
-      setPreviewUrl(null);
+        if (isTextLike) {
+          const text = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('Failed to read text'));
+            reader.readAsText(file);
+          });
+          previewDataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(text.slice(0, 20000))}`; // cap size
+        } else {
+          previewDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("Failed to read file for preview"));
+            reader.readAsDataURL(file);
+          });
+        }
+        // keep in-memory only
+  } catch { /* noop */ }
     }
 
     try {
       const res = await analyzeFile(file);
-      setResult(res);
         // Build a standalone HTML page with the results and open it in the pre-opened tab
         const html = buildResultHtml({
           fileName: file.name,
-          previewUrl: (img || isPdf) ? previewDataUrl : null,
+          previewUrl: (img || isPdf || isTextLike) ? previewDataUrl : null,
           isImage: img,
           isPdf,
           result: res,
@@ -97,16 +105,17 @@ export default function UploadForm() {
           const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
           if (!window.open(blobUrl, '_blank')) window.location.href = blobUrl;
         }
-    } catch (err: any) {
-        const msg = (err?.response?.data?.detail || err?.message || 'Network Error') as string;
+  } catch (err: unknown) {
+    type ApiErr = { response?: { data?: { detail?: string } }; message?: string };
+    const e = err as ApiErr;
+    const msg = (e?.response?.data?.detail || e?.message || 'Network Error');
         console.error('Analyze request failed; falling back to local analysis:', msg);
         // Fallback: perform a lightweight local analysis so the user still gets a result
         try {
           const localRes = await localAnalyzeFile(file, previewDataUrl, img);
-          setResult(localRes);
           const html = buildResultHtml({
             fileName: file.name,
-            previewUrl: (img || isPdf) ? previewDataUrl : null,
+            previewUrl: (img || isPdf || isTextLike) ? previewDataUrl : null,
             isImage: img,
             isPdf,
             result: localRes,
@@ -118,11 +127,11 @@ export default function UploadForm() {
           } else if (!window.open(blobUrl, '_blank')) {
             window.location.href = blobUrl;
           }
-        } catch (fallbackErr) {
+  } catch {
           // If even fallback fails, show error page
           const html = buildResultHtml({
             fileName: file.name,
-            previewUrl: (img || isPdf) ? previewDataUrl : null,
+            previewUrl: (img || isPdf || isTextLike) ? previewDataUrl : null,
             isImage: img,
             isPdf,
             error: msg,
@@ -146,7 +155,7 @@ export default function UploadForm() {
     }
   }, []);
 
-  function buildResultHtml(payload: { fileName: string; previewUrl: string | null; isImage: boolean; isPdf?: boolean; result?: AnalysisResult & { [k: string]: any }; error?: string }, origin: string) {
+  function buildResultHtml(payload: { fileName: string; previewUrl: string | null; isImage: boolean; isPdf?: boolean; result?: ApiAnalysisResult; error?: string }, origin: string) {
     const { fileName, previewUrl, isImage, isPdf, result, error } = payload;
     const verdict = result?.verdict;
     const scorePct = Math.max(0, Math.min(100, Math.round((result?.score || 0) * 100)));
@@ -182,7 +191,7 @@ export default function UploadForm() {
       </div>` : '';
 
     // Build rating breakdown if details are present (from server) or synthesize basic info
-  const details: any = (result as any)?.details || {};
+    const details = (result?.details ?? {}) as AnalyzerDetails;
     const metaHits: string[] = Array.isArray(details.meta_hits) ? details.meta_hits : [];
     const ocrHits: string[] = Array.isArray(details.ocr_hits) ? details.ocr_hits : [];
     const entropy = typeof details.entropy === 'number' ? details.entropy : undefined;
@@ -242,6 +251,7 @@ export default function UploadForm() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <title>ProofGuard – Result</title>
         <style>
           :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
@@ -249,7 +259,7 @@ export default function UploadForm() {
           body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
           .app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}
           .brand{display:flex;align-items:center;gap:10px}
-          .logo{width:34px;height:34px;background:linear-gradient(135deg,#0f66ff,#29cfff);border-radius:8px}
+          .logo{width:34px;height:34px;border-radius:8px;display:block}
           .brand-name{font-size:20px;font-weight:700;color:#111827;text-decoration:none}
           .muted-2{color:#7f8790}
           .nav{display:flex;gap:18px;color:#3a424a}
@@ -267,7 +277,9 @@ export default function UploadForm() {
           .preview-box { position:relative; width:100%; padding-top:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background: linear-gradient(135deg, #eef2ff, #f5f3ff); display:block; }
           .preview-box img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
           .preview-pdf { position:relative; width:100%; height:520px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; }
+          .preview-text { position:relative; width:100%; height:520px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; }
           .preview-pdf iframe, .preview-pdf embed, .preview-pdf object { position:absolute; inset:0; width:100%; height:100%; border:0; }
+          .preview-text iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
           .filename { margin-top:10px; font-size:14px; color:#374151; word-break: break-all; display:flex; gap:8px; align-items:center; }
           .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700; font-size:12px; }
           .badge-green { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
@@ -294,7 +306,7 @@ export default function UploadForm() {
         </script>
         <header class="app-header">
           <div class="brand">
-            <div class="logo"></div>
+            <img src="/favicon.svg" alt="ProofGuard logo" class="logo" />
             <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
           </div>
           <nav class="nav">
@@ -320,11 +332,15 @@ export default function UploadForm() {
                 <div class="preview-pdf">
                   <iframe src="${previewUrl}#view=FitH" title="${fileName}"></iframe>
                 </div>
+              ` : (previewUrl && String(previewUrl).startsWith('data:text') ? `
+                <div class="preview-text">
+                  <iframe src="${previewUrl}" title="${fileName}"></iframe>
+                </div>
               ` : `
                 <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
                   <div class="muted">No preview available</div>
                 </div>
-              `)}
+              `))}
               <div class="filename">${isImage ? '🖼️' : '📎'} <span>${fileName}</span></div>
             </div>
             <div class="card">
@@ -341,7 +357,13 @@ export default function UploadForm() {
             </div>
           </div>
           ${breakdownSection}
-          ${detectedTextSection}
+          ${detectedTextSection || (!error && isImage && previewUrl && !ocrFull ? `
+            <section class="card" id="ocr-fallback" style="margin-top:16px;">
+              <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Detected text (transcription)</h2>
+              <div id="ocr-status" class="muted">Transcribing image text in your browser…</div>
+              <div id="ocr-output" style="display:none;max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;"></div>
+            </section>
+          ` : '')}
         </div>
         <footer style="border-top:1px solid #e5e7eb; background:#fff; margin-top:16px;">
           <div class="container" style="padding-top:16px;padding-bottom:12px;">
@@ -360,6 +382,36 @@ export default function UploadForm() {
             </div>
           </div>
         </footer>
+        ${!error && isImage && previewUrl && !ocrFull ? `
+        <script>
+          (function(){
+            var imgUrl = ${JSON.stringify(previewUrl)};
+            function escapeHtml(s){return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+            function run(){
+              if (!window.Tesseract) { return; }
+              var status = document.getElementById('ocr-status');
+              var out = document.getElementById('ocr-output');
+              try {
+                window.Tesseract.recognize(imgUrl, 'eng').then(function(res){
+                  var txt = (res && res.data && res.data.text) ? res.data.text.trim() : '';
+                  if (txt) {
+                    if (status) status.style.display='none';
+                    if (out) { out.style.display='block'; out.innerHTML = escapeHtml(txt); }
+                  } else {
+                    if (status) status.innerHTML = 'No text detected by browser OCR.';
+                  }
+                }).catch(function(){ if (status) status.innerHTML='Could not transcribe text in browser.'; });
+              } catch(e){ if (status) status.innerHTML='Could not transcribe text in browser.'; }
+            }
+            if (!window.Tesseract) {
+              var s=document.createElement('script');
+              s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
+              s.onload=run; s.onerror=function(){ var st=document.getElementById('ocr-status'); if(st) st.innerHTML='OCR script failed to load.'; };
+              document.head.appendChild(s);
+            } else { run(); }
+          })();
+        </script>
+        ` : ''}
       </body>
     </html>`;
   }
@@ -429,158 +481,94 @@ export default function UploadForm() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'],
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'text/plain': ['.txt'],
-      'application/vnd.ms-powerpoint': ['.ppt'],
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx']
+    // Accept all by default; block ZIP via validator
+    accept: undefined,
+    validator: (file) => {
+      const name = (file.name || '').toLowerCase();
+      const type = (file.type || '').toLowerCase();
+      if (name.endsWith('.zip') || type === 'application/zip' || type === 'application/x-zip-compressed') {
+        return { code: 'file-invalid-type', message: 'ZIP files are not supported' } as const;
+      }
+      return null;
     },
     maxFiles: 1,
     maxSize: 10485760 // 10MB
   });
 
-  const getFileIcon = (name: string) => {
-    const ext = name.split('.').pop()?.toLowerCase();
-    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg'].includes(ext || '')) {
-      return <Image className="w-4 h-4" />;
-    } else if (ext === 'pdf') {
-      return <FileText className="w-4 h-4" />;
-    }
-    return <File className="w-4 h-4" />;
-  };
-
   // No cleanup needed for data URLs
 
-  // Modal removed; no scroll locking needed
-
-  // Removed inline Gauge in favor of dedicated result page
-
+  // Minimal mount: invisible input + full-card drop target and compact status
   return (
-  <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 pt-8 md:pt-10 pb-4 md:pb-6 px-4 md:px-6">
-      <div className="max-w-5xl mx-auto">
-        {/* Hero Section - moved higher */}
-        <div className="text-center mb-8 md:mb-10">
-          <h1 className="text-[2.25rem] md:text-[3rem] font-extrabold tracking-tight text-gray-900 mb-2">
-            Detect AI Content
-          </h1>
-          <p className="text-base md:text-lg text-gray-600">
-            100% Automatically and
-            <span className="ml-2 inline-block px-2.5 py-1 bg-blue-600 text-white text-xs md:text-sm font-semibold rounded-full align-middle">Free</span>
-          </p>
+    <div
+      {...getRootProps({
+        className: undefined,
+      })}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 24,
+        border: isDragActive ? '2px dashed #60a5fa' : '2px dashed transparent',
+        background: isDragActive ? 'rgba(59,130,246,.08)' : 'transparent',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'auto'
+      }}
+      aria-label="Drop files to analyze"
+    >
+      <input {...getInputProps()} style={{ display: 'none' }} />
+      {loading && (
+        <div style={{
+          position: 'absolute',
+          bottom: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '8px 12px',
+          background: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: 999,
+          boxShadow: '0 10px 20px rgba(0,0,0,.06)'
+        }}>
+          <Loader2 className="w-4 h-4" />
+          <span style={{ fontSize: 14, color: '#374151' }}>Analyzing {fileName}…</span>
         </div>
-
-        {/* Main Upload Area */}
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          {/* Left side - Example */}
-          <div className="flex-1 max-w-md">
-            <div className="bg-white rounded-xl p-6 md:p-8 shadow-sm border border-gray-200">
-              {/* Preview panel */}
-              {previewUrl && isImage ? (
-                <div className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-gray-200">
-                  {/* Loading overlay */}
-                  {loading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center">
-                      <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-2" />
-                      <p className="text-sm text-gray-700">Analyzing…</p>
-                    </div>
-                  )}
-                  <img src={previewUrl} alt={fileName} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => { setPreviewUrl(null); setFileName(""); setResult(null); setError(null); }}
-                    className="absolute top-2 right-2 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/90 text-gray-700 hover:bg-white shadow"
-                    aria-label="Clear preview"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="aspect-square bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
-                  <Upload className="w-16 h-16 text-gray-400" />
-                </div>
-              )}
-              {/* Filename */}
-              {fileName && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 truncate">
-                  {getFileIcon(fileName)}
-                  <span className="truncate" title={fileName}>{fileName}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right side - Upload */}
-          <div className="flex-1 max-w-md">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
-              {!result && !loading && (
-                <div
-                  {...getRootProps()}
-                  className={`
-                    border-2 border-dashed rounded-lg p-8 md:p-12 text-center cursor-pointer
-                    transition-all duration-200
-                    ${isDragActive 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                    }
-                  `}
-                >
-                  <input {...getInputProps()} />
-                  <button className="mb-3 md:mb-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow">
-                    Upload or Drop File
-                  </button>
-                  <p className="text-gray-600 text-sm">
-                    or drop a file
-                  </p>
-                </div>
-              )}
-
-              {/* Loading State */}
-              {loading && (
-                <div className="text-center py-12">
-                  <div className="relative inline-block mb-4">
-                    <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-xl animate-pulse"></div>
-                    <Loader2 className="relative w-12 h-12 text-blue-600 animate-spin" />
-                  </div>
-                  <p className="text-gray-700 font-medium">Analyzing {fileName}…</p>
-                  <div className="mt-4 max-w-md mx-auto">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full w-1/3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 animate-[loading_1.4s_ease_infinite]"></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Error State */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-900 font-semibold">Analysis Failed</p>
-                      <p className="text-red-700 text-sm mt-1">{error}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Results are now displayed on a separate page; keep this section empty */}
-              {null}
-            </div>
-
-            {/* File type info */}
-            {!result && !loading && (
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">No file?</p>
-              </div>
-            )}
-          </div>
+      )}
+      {!loading && fileName && (
+        <div style={{
+          position: 'absolute',
+          bottom: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontSize: 12,
+          color: '#6b7280',
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          padding: '6px 10px',
+          borderRadius: 999
+        }} title={fileName}>
+          {fileName}
         </div>
-      </div>
-
-      {/* Results modal removed; results open on a new page */}
+      )}
+      {error && (
+        <div style={{
+          position: 'absolute',
+          bottom: 16,
+          left: 16,
+          right: 16,
+          textAlign: 'center',
+          color: '#b91c1c',
+          fontSize: 13,
+          background: '#fff1f2',
+          border: '1px solid #fecaca',
+          padding: '8px 10px',
+          borderRadius: 12
+        }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }

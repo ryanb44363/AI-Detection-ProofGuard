@@ -63,7 +63,7 @@ export default function ResultPage() {
           try {
             const parsed = JSON.parse(raw) as LocationState;
             setLocal(parsed);
-          } catch (_) {
+          } catch {
             // ignore parse errors
           } finally {
             // clean up stored payload
