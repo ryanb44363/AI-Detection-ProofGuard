@@ -531,11 +531,8 @@ export default function UploadForm() {
                   <button className="mb-3 md:mb-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow">
                     Upload or Drop File
                   </button>
-                  <p className="text-gray-600 text-sm mb-4">
+                  <p className="text-gray-600 text-sm">
                     or drop a file
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    paste image or <span className="text-blue-600 underline">URL</span>
                   </p>
                 </div>
               )}

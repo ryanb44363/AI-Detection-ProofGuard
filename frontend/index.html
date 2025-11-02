@@ -162,17 +162,15 @@
       <!-- Right: Upload card with React mount inside -->
       <section class="hero-right">
         <div class="upload-card" role="region" aria-label="Upload card">
-          <button class="upload-btn" onclick="document.querySelector('#root input[type=file]')?.click?.()">Upload File</button>
-          <p class="upload-alt">or drop a file, paste image or <a href="#">URL</a></p>
-          <div class="no-image">
-            <span>No file? Try one of these:</span>
-            <div class="sample-avatars">
-              <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 1">
-              <img src="https://images.pexels.com/photos/736716/pexels-photo-736716.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 2">
-              <img src="https://images.pexels.com/photos/46710/pexels-photo-46710.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 3">
-              <img src="https://images.pexels.com/photos/1152994/pexels-photo-1152994.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 4">
-            </div>
+          <!-- Add hero text above the button within this section only -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.01em;">Detect AI Content</div>
+            <div style="font-size:.95rem;color:#6b7580;font-weight:600;">100% Automatically and <strong style="color:#111827">Free</strong></div>
           </div>
+
+          <button class="upload-btn" onclick="document.querySelector('#root input[type=file]')?.click?.()">Upload or Drop File</button>
+          <p class="upload-alt">or drop a file</p>
+          
 
           <!-- React mounts here; UploadForm UI will replace the placeholder button behavior -->
           <div class="react-host">
