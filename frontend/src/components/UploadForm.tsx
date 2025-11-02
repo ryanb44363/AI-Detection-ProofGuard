@@ -15,20 +15,19 @@ export default function UploadForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
-  
-  
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
-    
+
     const file = acceptedFiles[0];
+
     // Open a blank tab immediately to avoid popup blockers; show a loading animation
-    const holdingTab = window.open('', '_blank');
+    const holdingTab = window.open("", "_blank");
     if (holdingTab && holdingTab.document) {
       try {
-        holdingTab.document.title = 'Analyzing… | ProofGuard';
-        holdingTab.document.body.style.margin = '0';
-        holdingTab.document.body.style.fontFamily = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        holdingTab.document.title = "Analyzing… | ProofGuard";
+        holdingTab.document.body.style.margin = "0";
+        holdingTab.document.body.style.fontFamily = "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
         holdingTab.document.body.innerHTML = `
           <style>
             @keyframes spin { to { transform: rotate(360deg); } }
@@ -46,27 +45,28 @@ export default function UploadForm() {
       } catch { /* ignore */ }
     }
 
-  // Determine type for preview generation (image/pdf/text supported)
+    // Determine type for preview generation (image/pdf/text supported)
     const ext = file.name.split(".").pop()?.toLowerCase();
-  const img = ["png","jpg","jpeg","gif","bmp","webp","svg"].includes(ext || "");
-  const isPdf = ext === 'pdf';
-  const textLikeExts = [
-    'txt','md','markdown','csv','tsv','json','log','html','css','js','jsx','ts','tsx','py','java','c','cpp','h','hpp','cs','rb','go','rs','php','sh','yml','yaml','xml','ini','conf','cfg','toml'
-  ];
-  const isTextLike = textLikeExts.includes(ext || '') || (file.type || '').startsWith('text/');
+    const isImage = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg"].includes(ext || "");
+    const isPdf = ext === "pdf";
+    const textLikeExts = [
+      "txt", "md", "markdown", "csv", "tsv", "json", "log", "html", "css", "js", "jsx", "ts", "tsx", "py", "java", "c", "cpp", "h", "hpp", "cs", "rb", "go", "rs", "php", "sh", "yml", "yaml", "xml", "ini", "conf", "cfg", "toml",
+    ];
+    const isTextLike = textLikeExts.includes(ext || "") || (file.type || "").startsWith("text/");
+
     setFileName(file.name);
     setError(null);
     setLoading(true);
-    
+
     // Prepare preview data URL for images, PDFs, or text (so new tab can render without blob revocation)
     let previewDataUrl: string | null = null;
-    if (img || isPdf || isTextLike) {
+    if (isImage || isPdf || isTextLike) {
       try {
         if (isTextLike) {
           const text = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result || ''));
-            reader.onerror = () => reject(new Error('Failed to read text'));
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(new Error("Failed to read text"));
             reader.readAsText(file);
           });
           previewDataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(text.slice(0, 20000))}`; // cap size
@@ -78,179 +78,368 @@ export default function UploadForm() {
             reader.readAsDataURL(file);
           });
         }
-        // keep in-memory only
-  } catch { /* noop */ }
+      } catch {
+        // ignore preview failures
+      }
     }
 
     try {
       const res = await analyzeFile(file);
-        // Build a standalone HTML page with the results and open it in the pre-opened tab
-        const html = buildResultHtml({
+      // Build a standalone HTML page with the results and open it in the pre-opened tab
+      const html = buildResultHtml(
+        {
           fileName: file.name,
-          previewUrl: (img || isPdf || isTextLike) ? previewDataUrl : null,
-          isImage: img,
+          previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
+          isImage,
           isPdf,
           result: res,
-        }, window.location.origin);
+        },
+        window.location.origin
+      );
+      if (holdingTab && holdingTab.document) {
+        try {
+          holdingTab.document.open();
+          holdingTab.document.write(html);
+          holdingTab.document.close();
+        } catch {
+          const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+          try {
+            holdingTab.location.href = blobUrl;
+          } catch {
+            window.open(blobUrl, "_blank");
+          }
+        }
+      } else {
+        const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+        if (!window.open(blobUrl, "_blank")) window.location.href = blobUrl;
+      }
+    } catch (err: unknown) {
+      type ApiErr = { response?: { data?: { detail?: string } }; message?: string };
+      const e = err as ApiErr;
+      const msg = e?.response?.data?.detail || e?.message || "Network Error";
+      console.error("Analyze request failed; falling back to local analysis:", msg);
+      // Fallback: perform a lightweight local analysis so the user still gets a result
+      try {
+        const localRes = await localAnalyzeFile(file, previewDataUrl, isImage);
+        const html = buildResultHtml(
+          {
+            fileName: file.name,
+            previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
+            isImage,
+            isPdf,
+            result: localRes,
+          },
+          window.location.origin
+        );
+        const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+        if (holdingTab) {
+          try {
+            holdingTab.location.replace(blobUrl);
+          } catch {
+            window.open(blobUrl, "_blank");
+          }
+        } else if (!window.open(blobUrl, "_blank")) {
+          window.location.href = blobUrl;
+        }
+      } catch {
+        // If even fallback fails, show error page
+        const html = buildResultHtml(
+          {
+            fileName: file.name,
+            previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
+            isImage,
+            isPdf,
+            error: msg,
+          },
+          window.location.origin
+        );
         if (holdingTab && holdingTab.document) {
           try {
             holdingTab.document.open();
             holdingTab.document.write(html);
             holdingTab.document.close();
           } catch {
-            const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-            try { holdingTab.location.href = blobUrl; } catch { window.open(blobUrl, '_blank'); }
+            const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+            try {
+              holdingTab.location.href = blobUrl;
+            } catch {
+              window.open(blobUrl, "_blank");
+            }
           }
         } else {
-          const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-          if (!window.open(blobUrl, '_blank')) window.location.href = blobUrl;
+          const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+          if (!window.open(blobUrl, "_blank")) window.location.href = blobUrl;
         }
-  } catch (err: unknown) {
-    type ApiErr = { response?: { data?: { detail?: string } }; message?: string };
-    const e = err as ApiErr;
-    const msg = (e?.response?.data?.detail || e?.message || 'Network Error');
-        console.error('Analyze request failed; falling back to local analysis:', msg);
-        // Fallback: perform a lightweight local analysis so the user still gets a result
-        try {
-          const localRes = await localAnalyzeFile(file, previewDataUrl, img);
-          const html = buildResultHtml({
-            fileName: file.name,
-            previewUrl: (img || isPdf || isTextLike) ? previewDataUrl : null,
-            isImage: img,
-            isPdf,
-            result: localRes,
-          }, window.location.origin);
-          const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-          if (holdingTab) {
-            try { holdingTab.location.replace(blobUrl); }
-            catch { window.open(blobUrl, '_blank'); }
-          } else if (!window.open(blobUrl, '_blank')) {
-            window.location.href = blobUrl;
-          }
-  } catch {
-          // If even fallback fails, show error page
-          const html = buildResultHtml({
-            fileName: file.name,
-            previewUrl: (img || isPdf || isTextLike) ? previewDataUrl : null,
-            isImage: img,
-            isPdf,
-            error: msg,
-          }, window.location.origin);
-          if (holdingTab && holdingTab.document) {
-            try {
-              holdingTab.document.open();
-              holdingTab.document.write(html);
-              holdingTab.document.close();
-            } catch {
-              const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-              try { holdingTab.location.href = blobUrl; } catch { window.open(blobUrl, '_blank'); }
-            }
-          } else {
-            const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-            if (!window.open(blobUrl, '_blank')) window.location.href = blobUrl;
-          }
-        }
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
-  function buildResultHtml(payload: { fileName: string; previewUrl: string | null; isImage: boolean; isPdf?: boolean; result?: ApiAnalysisResult; error?: string }, origin: string) {
+  function buildResultHtml(
+    payload: {
+      fileName: string;
+      previewUrl: string | null;
+      isImage: boolean;
+      isPdf?: boolean;
+      result?: ApiAnalysisResult;
+      error?: string;
+    },
+    origin: string
+  ) {
     const { fileName, previewUrl, isImage, isPdf, result, error } = payload;
     const verdict = result?.verdict;
     const scorePct = Math.max(0, Math.min(100, Math.round((result?.score || 0) * 100)));
-    const color = verdict === 'authentic' ? '#10b981' : '#f59e0b';
+    const color = verdict === "authentic" ? "#10b981" : "#f59e0b";
     const verdictTitle = error
-      ? 'Analysis failed'
-      : verdict === 'authentic'
-        ? 'Authentic Content'
-        : 'Potentially AI-Generated';
-    const reasonText = error || result?.reason || '';
+      ? "Analysis failed"
+      : verdict === "authentic"
+      ? "Authentic Content"
+      : "Potentially AI-Generated";
+    const reasonText = error || result?.reason || "";
 
-    const gauge = !error ? `
+    const details = (result?.details ?? {}) as AnalyzerDetails;
+    const metaHits: string[] = Array.isArray(details.meta_hits) ? details.meta_hits : [];
+    const ocrHits: string[] = Array.isArray(details.ocr_hits) ? details.ocr_hits : [];
+    const entropy = typeof details.entropy === "number" ? details.entropy : undefined;
+    const width = (details as any).width || "";
+    const height = (details as any).height || "";
+    const ocrPreview = (details as any).ocr_preview || "";
+    const ocrFull = (details as any).ocr_full || (details as any).ocr_preview || "";
+    const metaMap = details.meta || {};
+    const metaKeysCount = typeof metaMap === "object" ? Object.keys(metaMap).length : 0;
+    const ocrWordCount = ocrFull ? ocrFull.trim().split(/\s+/).length : 0;
+
+    const gauge = !error
+      ? `
       <div class="gauge-wrap">
         <div class="center">
           <svg viewBox="0 0 200 120" style="width:100%">
             <path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="#e5e7eb" stroke-width="16" pathLength="100" />
             <path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="${color}" stroke-linecap="round" stroke-width="16" pathLength="100" stroke-dasharray="${scorePct} 100" />
-            ${Array.from({ length: 11 }).map((_, i) => {
-              const angle = Math.PI * (1 - i / 10);
-              const rOuter = 100; const rInner = 90; const cx = 100, cy = 110;
-              const x1 = cx + rInner * Math.cos(angle);
-              const y1 = cy - rInner * Math.sin(angle);
-              const x2 = cx + rOuter * Math.cos(angle);
-              const y2 = cy - rOuter * Math.sin(angle);
-              return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#f3f4f6" stroke-width="2" />`;
-            }).join('')}
           </svg>
           <div style="margin-top:-16px">
             <div style="font-size:32px;font-weight:800;color:${color}">${scorePct}%</div>
             <div class="muted">Confidence</div>
           </div>
         </div>
-      </div>` : '';
+      </div>`
+      : "";
 
-    // Build rating breakdown if details are present (from server) or synthesize basic info
-    const details = (result?.details ?? {}) as AnalyzerDetails;
-    const metaHits: string[] = Array.isArray(details.meta_hits) ? details.meta_hits : [];
-    const ocrHits: string[] = Array.isArray(details.ocr_hits) ? details.ocr_hits : [];
-    const entropy = typeof details.entropy === 'number' ? details.entropy : undefined;
-    const width = details.width || '';
-    const height = details.height || '';
-  const ocrPreview = details.ocr_preview || '';
-  const ocrFull = details.ocr_full || details.ocr_preview || '';
-  const metaMap = details.meta || {};
-  const metaKeysCount = typeof metaMap === 'object' ? Object.keys(metaMap).length : 0;
-  const ocrWordCount = ocrFull ? (ocrFull.trim().split(/\s+/).length) : 0;
-    const metaBump = metaHits.length > 0 ? 0.35 : 0;
-    const ocrBump = ocrHits.length > 0 ? 0.25 : 0;
-    const entropyBump = typeof entropy === 'number' && entropy < 5.5 ? 0.05 : 0;
-    const baseScore = 0.45;
-    const computed = Math.max(0, Math.min(0.98, baseScore + metaBump + ocrBump + entropyBump));
-    const breakdownSection = !error ? `
+    const breakdownSection = !error
+      ? `
       <section class="card" style="margin-top:16px;">
         <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Rating breakdown</h2>
         <div style="font-size:14px;color:#374151">
           <div style="display:grid;grid-template-columns:1fr auto;row-gap:6px;column-gap:12px;">
-            <div>Base score</div><strong>${(baseScore*100).toFixed(0)}%</strong>
-            <div>Metadata indicators</div><strong>${(metaBump*100).toFixed(0)}%</strong>
-            <div>OCR AI terms</div><strong>${(ocrBump*100).toFixed(0)}%</strong>
-            <div>Low-entropy bump</div><strong>${(entropyBump*100).toFixed(0)}%</strong>
+            <div>Base score</div><strong>45%</strong>
+            <div>Metadata indicators</div><strong>${(metaHits.length ? 35 : 0).toFixed(0)}%</strong>
+            <div>OCR AI terms</div><strong>${(ocrHits.length ? 25 : 0).toFixed(0)}%</strong>
+            <div>Low-entropy bump</div><strong>${typeof entropy === "number" && entropy < 5.5 ? 5 : 0}%</strong>
           </div>
           <hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb" />
-          <div style="display:flex;justify-content:space-between"><span>Computed (heuristic)</span><strong>${(computed*100).toFixed(0)}%</strong></div>
           <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
               <div style="font-weight:700;margin-bottom:6px;">Indicators detected</div>
-              ${metaHits.length ? `<div><strong>Metadata hits:</strong> ${metaHits.map(h=>`<code>${h}</code>`).join(', ')}</div>` : '<div>No explicit AI metadata markers found.</div>'}
-              ${ocrHits.length ? `<div style="margin-top:6px"><strong>OCR hits:</strong> ${ocrHits.map(h=>`<code>${h}</code>`).join(', ')}</div>` : '<div style="margin-top:6px">No AI keywords found in detected text.</div>'}
+              ${
+                metaHits.length
+                  ? `<div><strong>Metadata hits:</strong> ${metaHits.map((h) => `<code>${h}</code>`).join(", ")}</div>`
+                  : "<div>No explicit AI metadata markers found.</div>"
+              }
+              ${
+                ocrHits.length
+                  ? `<div style="margin-top:6px"><strong>OCR hits:</strong> ${ocrHits.map((h) => `<code>${h}</code>`).join(", ")}</div>`
+                  : '<div style="margin-top:6px">No AI keywords found in detected text.</div>'
+              }
             </div>
             <div>
               <div style="font-weight:700;margin-bottom:6px;">Signal metrics</div>
-              ${typeof entropy === 'number' ? `<div>Entropy: <strong>${entropy.toFixed(2)}</strong></div>` : ''}
-              ${(width&&height) ? `<div>Dimensions: <strong>${width}×${height}</strong></div>` : ''}
-              ${metaKeysCount ? `<div>Metadata fields: <strong>${metaKeysCount}</strong></div>` : ''}
-              ${ocrWordCount ? `<div>Detected words: <strong>${ocrWordCount}</strong></div>` : ''}
+              ${typeof entropy === "number" ? `<div>Entropy: <strong>${entropy.toFixed(2)}</strong></div>` : ""}
+              ${width && height ? `<div>Dimensions: <strong>${width}×${height}</strong></div>` : ""}
+              ${metaKeysCount ? `<div>Metadata fields: <strong>${metaKeysCount}</strong></div>` : ""}
+              ${ocrWordCount ? `<div>Detected words: <strong>${ocrWordCount}</strong></div>` : ""}
             </div>
           </div>
-          ${ocrPreview ? `<div style="margin-top:10px"><strong>OCR preview:</strong> <span style="color:#6b7280">${ocrPreview.replace(/</g,'&lt;')}</span></div>` : ''}
+          ${ocrPreview ? `<div style="margin-top:10px"><strong>OCR preview:</strong> <span style="color:#6b7280">${ocrPreview.replace(/</g, "&lt;")}</span></div>` : ""}
           <p class="muted" style="margin-top:10px">This is a heuristic breakdown; not definitive proof.</p>
         </div>
-      </section>
-    ` : '';
+      </section>`
+      : "";
 
-  const needsClientExtract = !error && !ocrFull; // run failsafe for all files when server OCR is empty
-    const detectedTextSection = (!error && (ocrFull || needsClientExtract)) ? `
+    const needsClientExtract = !error && !ocrFull;
+    const detectedTextSection = !error && (ocrFull || needsClientExtract)
+      ? `
       <section class="card" style="margin-top:16px;">
         <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Detected text (transcription)</h2>
-        ${ocrFull ? `
-          <div style="max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;">${ocrFull.replace(/</g,'&lt;')}</div>
-        ` : `
-          <div id="extract-status" class="muted">Analyzing file to extract text…</div>
-          <div id="extract-output" style="display:none;max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;"></div>
-        `}
-      </section>
-    ` : '';
+        ${
+          ocrFull
+            ? `<div style="max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;">${ocrFull.replace(
+                /</g,
+                "&lt;"
+              )}</div>`
+            : '<div id="extract-status" class="muted">Analyzing file to extract text…</div>\n          <div id="extract-output" style="display:none;max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;"></div>'
+        }
+      </section>`
+      : "";
+
+    const previewSection = (() => {
+      if (!previewUrl) {
+        return `
+          <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
+            <div class="muted">No preview available</div>
+          </div>`;
+      }
+      if (isPdf) {
+        return `
+          <div class="preview-pdf">
+            <iframe src="${previewUrl}" title="${fileName}"></iframe>
+          </div>`;
+      }
+      if (previewUrl.startsWith("data:text")) {
+        return `
+          <div class="preview-text">
+            <iframe src="${previewUrl}" title="${fileName}"></iframe>
+          </div>`;
+      }
+      if (isImage) {
+        return `
+          <div class="preview-box">
+            <img src="${previewUrl}" alt="${fileName}" />
+          </div>`;
+      }
+      return `
+        <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
+          <div class="muted">No preview available</div>
+        </div>`;
+    })();
+
+    const clientExtractScript = needsClientExtract
+      ? `
+      <script>
+        (function(){
+          var previewUrl = ${JSON.stringify(previewUrl)};
+          var isImage = ${JSON.stringify(isImage)};
+          var isPdf = ${JSON.stringify(!!isPdf)};
+          var finished = false;
+
+          function setStatus(msg){ var el=document.getElementById('extract-status'); if(el){ el.textContent=msg; } }
+          function markDone(){ finished = true; }
+          function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c] || c; }); }
+
+          function qualityFilter(raw){
+            try{
+              var text = (raw||'').replace(/[\u0000-\u001F]/g,' ').replace(/\s+/g,' ').trim();
+              if (!text) return '';
+              var letters = (text.match(/[A-Za-z]/g)||[]).length;
+              var letterRatio = letters / Math.max(1, text.length);
+              if (letterRatio < 0.5) return '';
+              var longWords = text.split(/\s+/).filter(function(w){return w.length>=4;});
+              var uniqueWords = Array.from(new Set(longWords.map(function(w){return w.toLowerCase();})));
+              if (uniqueWords.length < Math.min(6, longWords.length*0.5)) return '';
+              return text;
+            }catch(e){return '';}
+          }
+
+          function show(text){
+            var status = document.getElementById('extract-status');
+            var out = document.getElementById('extract-output');
+            if (text){
+              if (status) status.style.display='none';
+              if (out){ out.style.display='block'; out.innerHTML = escapeHtml(text); }
+              markDone();
+            } else {
+              if (status) status.innerHTML = 'No meaningful text detected.';
+              markDone();
+            }
+          }
+
+          function tryDataText(){
+            try{
+              var comma = previewUrl.indexOf(',');
+              if (comma === -1) return false;
+              var header = previewUrl.slice(0, comma);
+              if (!/^data:text\//i.test(header)) return false;
+              var body = decodeURIComponent(previewUrl.slice(comma+1));
+              var cleaned = qualityFilter(body);
+              show(cleaned);
+              return true;
+            }catch(e){ return false; }
+          }
+
+          function tryPdf(){
+            if (!isPdf) return false;
+            function extractWithPdfJs(){
+              var status = document.getElementById('extract-status');
+              try{
+                var pdfjs = window['pdfjsLib'];
+                if (!pdfjs) return false;
+                pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.js';
+                pdfjs.getDocument(previewUrl).promise.then(function(doc){
+                  var maxPages = Math.min(3, doc.numPages);
+                  var tasks = [];
+                  for (var p=1; p<=maxPages; p++){
+                    tasks.push(doc.getPage(p).then(function(page){
+                      return page.getTextContent().then(function(tc){
+                        return tc.items.map(function(i){ return i.str || ''; }).join(' ');
+                      });
+                    }));
+                  }
+                  Promise.all(tasks).then(function(pages){
+                    var text = pages.join('\n');
+                    var cleaned = qualityFilter(text);
+                    show(cleaned);
+                  }).catch(function(){ if(status) status.innerHTML='Could not extract PDF text.'; markDone(); });
+                }).catch(function(){ if(status) status.innerHTML='Could not load PDF.'; markDone(); });
+                return true;
+              }catch(e){ if(status) status.innerHTML='Could not initialize PDF extractor.'; markDone(); return true; }
+            }
+            if (!window['pdfjsLib']){
+              var s=document.createElement('script');
+              s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.js';
+              s.onload=extractWithPdfJs; s.onerror=function(){ var st=document.getElementById('extract-status'); if(st) st.innerHTML='PDF script failed to load.'; markDone(); };
+              document.head.appendChild(s);
+              return true;
+            }
+            return extractWithPdfJs();
+          }
+
+          function tryOcr(){
+            if (!isImage) return false;
+            function run(){
+              var status = document.getElementById('extract-status');
+              try {
+                window.Tesseract.recognize(previewUrl, 'eng').then(function(res){
+                  var txt = (res && res.data && res.data.text) ? res.data.text.trim() : '';
+                  var cleaned = qualityFilter(txt);
+                  show(cleaned);
+                }).catch(function(){ if (status) status.innerHTML='Could not transcribe text in browser.'; markDone(); });
+              } catch(e){ if (status) status.innerHTML='Could not transcribe text in browser.'; markDone(); }
+            }
+            if (!window.Tesseract) {
+              var s=document.createElement('script');
+              s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
+              s.onload=run; s.onerror=function(){ var st=document.getElementById('extract-status'); if(st) st.innerHTML='OCR script failed to load.'; markDone(); };
+              document.head.appendChild(s);
+            } else { run(); }
+            return true;
+          }
+
+          // Priority: use text directly if provided, then PDF, then OCR
+          if (String(previewUrl||'').startsWith('data:text')) {
+            if (!tryDataText()) { if (!tryPdf()) { tryOcr(); } }
+          } else if (isPdf) {
+            if (!tryPdf()) { if (!tryOcr()) { tryDataText(); } }
+          } else if (isImage) {
+            if (!tryOcr()) { if (!tryPdf()) { tryDataText(); } }
+          } else {
+            setStatus('Unsupported preview type; unable to extract text.');
+            markDone();
+          }
+
+          setTimeout(function(){ if (!finished) { setStatus('No meaningful text detected or extraction timed out.'); markDone(); } }, 15000);
+        })();
+      </script>`
+      : "";
 
     return `<!doctype html>
     <html lang="en">
@@ -295,16 +484,12 @@ export default function UploadForm() {
           .btn-primary { background:linear-gradient(90deg, var(--blue), #4f46e5); color:#fff; border:none; }
           .gauge-wrap { width:100%; max-width:420px; margin: 0 auto 12px auto; }
           .center { text-align:center; }
-          ${needsClientExtract ? `
           .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; justify-content:center }
           .title { font-size:22px; font-weight:800; }
-              var previewUrl = ${JSON.stringify(previewUrl)};
+          .muted { color:#6b7280; font-size: 12px; }
         </style>
       </head>
-              var finished = false;
       <body>
-              function setStatus(msg){ var el=document.getElementById('extract-status'); if(el){ el.textContent=msg; } }
-              function markDone(){ finished = true; }
         <script>
           function goBack(origin){
             try{ if (window.opener && !window.opener.closed) { window.opener.focus(); } }catch(e){}
@@ -330,59 +515,14 @@ export default function UploadForm() {
             <a href="#" class="btn-ghost">Sign up</a>
           </div>
         </header>
-                  markDone();
+
         <div class="container">
           <div class="grid">
-                  markDone();
             <div class="card">
-              ${isImage && previewUrl ? `
-              function parseDataUrl(url){
-                try{
-                  if (!url || url.indexOf(',') === -1 || !/^data:/i.test(url)) return null;
-                  var comma = url.indexOf(',');
-                  var header = url.slice(0, comma);
-                  var body = url.slice(comma+1);
-                  var isBase64 = /;base64/i.test(header);
-                  var mime = (header.split(':')[1]||'').split(';')[0] || '';
-                  return { mime: mime, isBase64: isBase64, body: body };
-                }catch(e){ return null; }
-              }
-              function b64ToBytes(b64){
-                try{
-                  var bin = atob(b64);
-                  var len = bin.length;
-                  var bytes = new Uint8Array(len);
-                  for (var i=0;i<len;i++){ bytes[i] = bin.charCodeAt(i) & 0xff; }
-                  return bytes;
-                }catch(e){ return null; }
-              }
-                <div class="preview-box">
-                  <img src="${previewUrl}" alt="${fileName}" />
-                  var parsed = parseDataUrl(previewUrl||'');
-                  if (!parsed || !/^text\//i.test(parsed.mime)) return false;
-                  var body = parsed.isBase64 ? atob(parsed.body) : decodeURIComponent(parsed.body);
-              ` : (previewUrl && String(previewUrl).startsWith('data:text') ? `
-                <div class="preview-text">
-                  <iframe src="${previewUrl}" title="${fileName}"></iframe>
-                </div>
-              ` : `
-                <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
-                  <div class="muted">No preview available</div>
-                </div>
-              `))}
-              <div class="filename">${isImage ? '🖼️' : '📎'} <span>${fileName}</span></div>
+              ${previewSection}
+              <div class="filename">${isImage ? "🖼️" : "📎"} <span>${fileName}</span></div>
             </div>
             <div class="card">
-              <div class="center" style="margin-bottom:12px;">
-                    var src = previewUrl;
-                    var parsed = parseDataUrl(previewUrl||'');
-                    var getDocArg = src;
-                    if (parsed && /pdf/i.test(parsed.mime) && parsed.isBase64) {
-                      var bytes = b64ToBytes(parsed.body);
-                      if (bytes) { getDocArg = { data: bytes }; }
-                    }
-                    pdfjs.getDocument(getDocArg).promise.then(function(doc){
-              </div>
               ${gauge}
               <div class="title-row"><div class="title">${verdictTitle}</div></div>
               <p class="reason">${reasonText}</p>
@@ -393,24 +533,14 @@ export default function UploadForm() {
             </div>
           </div>
           ${breakdownSection}
-          ${detectedTextSection || (!error && isImage && previewUrl && !ocrFull ? `
-            <section class="card" id="ocr-fallback" style="margin-top:16px;">
-              <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Detected text (transcription)</h2>
-                    }).catch(function(){ if(status) status.innerHTML='Could not load PDF.'; markDone(); });
-              <div id="ocr-output" style="display:none;max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;"></div>
-                  }catch(e){ if(status) status.innerHTML='Could not initialize PDF extractor.'; markDone(); return true; }
-          ` : '')}
+          ${detectedTextSection}
         </div>
+
         <footer style="border-top:1px solid #e5e7eb; background:#fff; margin-top:16px;">
           <div class="container" style="padding-top:16px;padding-bottom:12px;">
-                  s.onload=extractWithPdfJs; s.onerror=function(){ var st=document.getElementById('extract-status'); if(st) st.innerHTML='PDF script failed to load.'; markDone(); };
-              Terms of Service. To learn more
-              <br />
-              about how ProofGuard handles your data, check our Privacy Policy.
-            </p>
             <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;">
               <span class="muted">© 2025 ProofGuard • Detect AI-generated content with confidence</span>
-                if (!isImage) return false;
+              <nav class="nav">
                 <a href="#" class="nav-link">Privacy Policy</a>
                 <a href="#" class="nav-link">Terms of Service</a>
                 <a href="#" class="nav-link">Contact</a>
@@ -418,130 +548,8 @@ export default function UploadForm() {
             </div>
           </div>
         </footer>
-                    }).catch(function(){ if (status) status.innerHTML='Could not transcribe text in browser.'; markDone(); });
-                  } catch(e){ if (status) status.innerHTML='Could not transcribe text in browser.'; markDone(); }
-          (function(){
-            var previewUrl = ${JSON.stringify(previewUrl)};
-            var isImage = ${JSON.stringify(isImage)};
-            var isPdf = ${JSON.stringify(!!isPdf)};
-                  s.onload=run; s.onerror=function(){ var st=document.getElementById('extract-status'); if(st) st.innerHTML='OCR script failed to load.'; markDone(); };
-            function qualityFilter(raw){
-              try{
-                var text = (raw||'').replace(/[\u0000-\u001F]/g,' ').replace(/\s+/g,' ').trim();
-                if (!text) return '';
-                // Basic heuristics to avoid spam/noise
-              if (!previewUrl) {
-                setStatus('No preview provided; cannot extract text client-side.');
-                markDone();
-              } else if (String(previewUrl||'').startsWith('data:text')) {
-                if (!tryDataText()) { if (!tryPdf()) { tryOcr(); } }
-              } else if (isPdf) {
-                if (!tryPdf()) { if (!tryOcr()) { tryDataText(); } }
-              } else if (isImage) {
-                if (!tryOcr()) { if (!tryPdf()) { tryDataText(); } }
-              } else {
-                // Unknown type but we have a preview URL; nothing more to try safely
-                setStatus('Unsupported preview type; unable to extract text.');
-                markDone();
-              }
-              // Watchdog timeout to avoid getting stuck
-              setTimeout(function(){ if (!finished) { setStatus('No meaningful text detected or extraction timed out.'); markDone(); } }, 15000);
-                if (letterRatio < 0.5) return '';
-                // reduce obvious repeated sequences
-                var uniqueWords = Array.from(new Set(longWords.map(function(w){return w.toLowerCase();})));
-                if (uniqueWords.length < Math.min(6, longWords.length*0.5)) return '';
-                return text;
-              }catch(e){return '';}
-            }
-            function show(text){
-              var status = document.getElementById('extract-status');
-              var out = document.getElementById('extract-output');
-              if (text){
-                if (status) status.style.display='none';
-                if (out){ out.style.display='block'; out.innerHTML = escapeHtml(text); }
-              } else {
-                if (status) status.innerHTML = 'No meaningful text detected.';
-              }
-            }
-            function tryDataText(){
-              try{
-                var comma = previewUrl.indexOf(',');
-                if (comma === -1) return false;
-                var header = previewUrl.slice(0, comma);
-                if (!/^data:text\//i.test(header)) return false;
-                var body = decodeURIComponent(previewUrl.slice(comma+1));
-                var cleaned = qualityFilter(body);
-                show(cleaned);
-                return true;
-              }catch(e){ return false; }
-            }
-            function tryPdf(){
-              if (!isPdf) return false;
-              function extractWithPdfJs(){
-                var status = document.getElementById('extract-status');
-                try{
-                  var pdfjs = window['pdfjsLib'];
-                  if (!pdfjs) return false;
-                  pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.worker.min.js';
-                  pdfjs.getDocument(previewUrl).promise.then(function(doc){
-                    var maxPages = Math.min(3, doc.numPages);
-                    var tasks = [];
-                    for (let p=1; p<=maxPages; p++){
-                      tasks.push(doc.getPage(p).then(function(page){
-                        return page.getTextContent().then(function(tc){
-                          return tc.items.map(function(i){ return i.str || ''; }).join(' ');
-                        });
-                      }));
-                    }
-                    Promise.all(tasks).then(function(pages){
-                      var text = pages.join('\n');
-                      var cleaned = qualityFilter(text);
-                      show(cleaned);
-                    }).catch(function(){ if(status) status.innerHTML='Could not extract PDF text.'; });
-                  }).catch(function(){ if(status) status.innerHTML='Could not load PDF.'; });
-                  return true;
-                }catch(e){ if(status) status.innerHTML='Could not initialize PDF extractor.'; return true; }
-              }
-              if (!window['pdfjsLib']){
-                var s=document.createElement('script');
-                s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.js';
-                s.onload=extractWithPdfJs; s.onerror=function(){ var st=document.getElementById('extract-status'); if(st) st.innerHTML='PDF script failed to load.'; };
-                document.head.appendChild(s);
-                return true;
-              }
-              return extractWithPdfJs();
-            }
-            function tryOcr(){
-              if (!isImage) return false;
-              function run(){
-                var status = document.getElementById('extract-status');
-                try {
-                  window.Tesseract.recognize(previewUrl, 'eng').then(function(res){
-                    var txt = (res && res.data && res.data.text) ? res.data.text.trim() : '';
-                    var cleaned = qualityFilter(txt);
-                    show(cleaned);
-                  }).catch(function(){ if (status) status.innerHTML='Could not transcribe text in browser.'; });
-                } catch(e){ if (status) status.innerHTML='Could not transcribe text in browser.'; }
-              }
-              if (!window.Tesseract) {
-                var s=document.createElement('script');
-                s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
-                s.onload=run; s.onerror=function(){ var st=document.getElementById('extract-status'); if(st) st.innerHTML='OCR script failed to load.'; };
-                document.head.appendChild(s);
-              } else { run(); }
-              return true;
-            }
-            // Priority: use text directly if provided, then PDF, then OCR
-            if (String(previewUrl||'').startsWith('data:text')) {
-              if (!tryDataText()) { if (!tryPdf()) { tryOcr(); } }
-            } else if (isPdf) {
-              if (!tryPdf()) { if (!tryOcr()) { tryDataText(); } }
-            } else if (isImage) {
-              if (!tryOcr()) { if (!tryPdf()) { tryDataText(); } }
-            }
-          })();
-        </script>
-        ` : ''}
+
+        ${clientExtractScript}
       </body>
     </html>`;
   }
