@@ -2,13 +2,186 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ProofGuard - Detect AI-generated content in images, documents, and PDFs with advanced machine learning" />
-    <title>ProofGuard - AI Content Detection</title>
+    <meta name="description" content="ProofGuard – Detect AI-generated content in images, documents, and PDFs with advanced machine learning" />
+    <title>ProofGuard – AI Content Detection</title>
+
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+      :root {
+        --bg: #ffffff;
+        --ink: #0f172a;
+        --muted: #6b7280;
+        --blue: #0f7aff;
+        --purple: #6f43ff;
+        --teal: #10b981;
+        --banner: #c6e1ff;
+        --stroke: #edf0f4;
+        --card: #ffffff;
+        --radius-lg: 28px;
+        --radius-xl: 32px;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Micro-resets */
+      a { color: inherit; text-decoration: none; }
+      button { font: inherit; }
+
+      /* Subtle animated gradient background */
+      .page-bg {
+        position: fixed; inset: 0; pointer-events: none; z-index: -1;
+        background:
+          radial-gradient(80vw 80vw at -10% -10%, rgba(59,130,246,0.08), transparent 55%),
+          radial-gradient(60vw 60vw at 110% 10%, rgba(147,51,234,0.08), transparent 55%),
+          linear-gradient(180deg, #fff, #fbfdff 35%, #f7f9ff 100%);
+      }
+
+      /* Top banner */
+      .top-banner { background: var(--banner); border-bottom: 1px solid #8ebcf2; padding: 10px 20px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:.9rem; position:relative; }
+      .top-banner a { color:#0e5da8; font-weight:600; }
+      .banner-close { position:absolute; right:16px; top:50%; transform:translateY(-50%); background:transparent; border:0; font-size:1.2rem; color:#2564a4; cursor:pointer; }
+
+      /* Header */
+      .navbar { height:72px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 40px; border-bottom:1px solid var(--stroke); backdrop-filter: saturate(140%) blur(6px); background: color-mix(in oklab, #ffffff 92%, #ffffff 100% / 80%); position:sticky; top:0; z-index:20; }
+      .nav-left { display:flex; align-items:center; gap:28px; }
+      .logo { display:flex; align-items:center; gap:10px; }
+      .logo-badge { position:relative; width:38px; height:38px; border-radius:12px; overflow:hidden; box-shadow: 0 8px 22px rgba(15,61,130,.15); }
+      .logo-badge::before { content:""; position:absolute; inset:-30%; background: conic-gradient(from 180deg, #0f66ff, #29cfff, #6f43ff, #0f66ff); filter: blur(12px); animation: spin 6s linear infinite; }
+      .logo-core { position:relative; inset:4px; display:block; width:30px; height:30px; margin:4px; border-radius:10px; background: linear-gradient(135deg, #0f66ff 0%, #29cfff 45%, #6f43ff 100%); }
+      .logo-text { font-size:1.25rem; font-weight:800; letter-spacing: .2px; }
+      .logo-text span { color:#7f8790; font-weight:700; }
+      .nav-links { display:flex; gap:22px; color:#3a424a; }
+      .nav-links a { position:relative; padding:6px 0; font-weight:600; }
+      .nav-links a::after { content:""; position:absolute; left:0; bottom:-2px; height:2px; width:0; background: linear-gradient(90deg, var(--blue), var(--purple)); transition:width .25s ease; }
+      .nav-links a:hover::after { width:100%; }
+      .actions { display:flex; gap:12px; align-items:center; }
+      .btn-link { background:none; border:1px solid transparent; padding:8px 12px; color:#2d3a45; font-weight:600; border-radius:9999px; }
+      .btn-cta { position:relative; overflow:hidden; background: linear-gradient(90deg, var(--blue), var(--purple)); color:#fff; border:0; border-radius:9999px; padding:10px 18px; font-weight:700; box-shadow: 0 12px 24px rgba(15,122,255,.25); }
+      .btn-cta::after { content:""; position:absolute; inset:0; background: linear-gradient(90deg, var(--purple), var(--blue)); opacity:0; transition:opacity .2s ease; }
+      .btn-cta:hover::after { opacity:1; }
+
+      /* Main layout */
+  .main { display:grid; grid-template-columns: 1.1fr .9fr; gap:56px; max-width:1180px; margin:0 auto; padding:24px 40px 56px; min-height: calc(100vh - 72px - 42px); }
+      .hero-left { display:flex; flex-direction:column; justify-content:center; gap:24px; }
+      .hero-art { position:relative; width:360px; height:230px; }
+      .hero-bg { position:absolute; inset:18px 0 0 0; height:190px; background:#ffca56; border-radius:72px; box-shadow: inset 0 -8px 24px rgba(0,0,0,.08), 0 24px 40px rgba(255,202,86,.25); animation: float 6s ease-in-out infinite; }
+      .hero-blob { position:absolute; top:-26px; right:-30px; width:120px; height:120px; background: radial-gradient(circle at 30% 30%, #ff7ad9, #ff4bb1); border-radius: 38% 62% 63% 37% / 45% 36% 64% 55%; filter: blur(2px); opacity:.85; animation: blob 8s ease-in-out infinite; }
+      .hero-person { position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); width:210px; height:210px; border-radius:999px; object-fit:cover; box-shadow: 0 18px 44px rgba(15,61,130,.2); }
+      .title { font-size: clamp(2.4rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+      .subtitle { font-size: 1.05rem; color: #5a6471; font-weight: 600; }
+      .subtitle strong { color:#111827; }
+
+      /* Right upload card */
+      .hero-right { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:18px; }
+      .upload-card { width:min(440px, 100%); background: color-mix(in oklab, #ffffff 94%, #ffffff 86%); border-radius: 30px; box-shadow: 0 18px 36px rgba(15,61,130,.12); padding: 40px 36px 28px; text-align:center; border: 1px solid rgba(25,118,255,.06); position:relative; overflow:hidden; }
+      .upload-card::before { content:""; position:absolute; inset:-2px; border-radius: inherit; padding:2px; background: linear-gradient(120deg, rgba(15,122,255,.25), rgba(111,67,255,.25)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
+      .upload-btn { background: linear-gradient(90deg, var(--blue), var(--purple)); color:#fff; border:0; border-radius: 9999px; padding: 16px 30px; font-size:1.05rem; font-weight:800; cursor: pointer; width: fit-content; margin: 0 auto 14px auto; display:block; box-shadow: 0 12px 24px rgba(15,122,255,.25); transition: transform .15s ease; }
+      .upload-btn:hover { transform: translateY(-1px); }
+      .upload-alt { font-size:.95rem; color:#6b7580; }
+      .upload-alt a { color: var(--blue); font-weight: 700; }
+      .no-image { margin-top: 22px; border-top:1px solid var(--stroke); padding-top: 16px; font-size:.8rem; color:#6b7580; display:flex; flex-direction:column; gap:10px; align-items:center; }
+      .sample-avatars { display:flex; gap:8px; }
+      .sample-avatars img { width:46px; height:46px; border-radius:999px; object-fit:cover; border:2px solid #fff; box-shadow: 0 6px 14px rgba(0,0,0,.12); }
+
+      /* React mount host inside card */
+      .react-host { margin-top: 14px; }
+
+      /* Animations */
+      @keyframes spin { to { transform: rotate(1turn); } }
+      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .main { grid-template-columns: 1fr; padding: 36px 20px 60px; gap: 40px; text-align:center; }
+        .hero-left, .hero-right { align-items:center; }
+        .hero-art { margin: 0 auto; }
+      }
+      @media (max-width: 720px) {
+        .navbar { padding: 0 18px; height:64px; }
+        .main { padding: 26px 16px 48px; }
+        .upload-card { padding: 28px 18px 24px; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div class="page-bg" aria-hidden="true"></div>
+
+    <!-- Top banner -->
+    <div class="top-banner">
+      We’ve updated our <a href="#">Terms</a> and <a href="#">Privacy</a>.
+      <button class="banner-close" onclick="this.parentElement.style.display='none'" aria-label="Close banner">×</button>
+    </div>
+
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="nav-left">
+        <div class="logo" aria-label="ProofGuard">
+          <div class="logo-badge"><span class="logo-core"></span></div>
+          <div class="logo-text">Proof<span>Guard</span></div>
+        </div>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="#">Uploads</a>
+          <a href="#">API</a>
+          <a href="#">Plugins</a>
+          <a href="#">Pricing</a>
+          <a href="#">Docs</a>
+        </nav>
+      </div>
+      <div class="actions">
+        <button class="btn-link">Log in</button>
+        <button class="btn-cta">Get Started</button>
+      </div>
+    </header>
+
+    <!-- Main hero -->
+    <main class="main">
+      <!-- Left -->
+      <section class="hero-left">
+        <div class="hero-art" aria-hidden="true">
+          <div class="hero-bg"></div>
+          <div class="hero-blob"></div>
+          <img class="hero-person" alt="Smiling person" src="https://images.pexels.com/photos/4065876/pexels-photo-4065876.jpeg?auto=compress&cs=tinysrgb&w=400" />
+        </div>
+        <h1 class="title">Detect AI<br/>Content</h1>
+        <p class="subtitle">100% Automatically and <strong>Free</strong></p>
+      </section>
+
+      <!-- Right: Upload card with React mount inside -->
+      <section class="hero-right">
+        <div class="upload-card" role="region" aria-label="Upload card">
+          <button class="upload-btn" onclick="document.querySelector('#root input[type=file]')?.click?.()">Upload File</button>
+          <p class="upload-alt">or drop a file, paste image or <a href="#">URL</a></p>
+          <div class="no-image">
+            <span>No file? Try one of these:</span>
+            <div class="sample-avatars">
+              <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 1">
+              <img src="https://images.pexels.com/photos/736716/pexels-photo-736716.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 2">
+              <img src="https://images.pexels.com/photos/46710/pexels-photo-46710.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 3">
+              <img src="https://images.pexels.com/photos/1152994/pexels-photo-1152994.jpeg?auto=compress&cs=tinysrgb&w=100" alt="Sample 4">
+            </div>
+          </div>
+
+          <!-- React mounts here; UploadForm UI will replace the placeholder button behavior -->
+          <div class="react-host">
+            <div id="root"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

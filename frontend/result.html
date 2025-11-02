@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ProofGuard – Analysis Result</title>
+    <meta name="description" content="Analysis result" />
+    <style>
+      :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; --green:#10b981; --amber:#f59e0b; }
+      * { box-sizing:border-box; }
+      body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+      .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+      .grid { display:grid; grid-template-columns: 1fr; gap: 24px; }
+      @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+      .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 6px 20px rgba(0,0,0,.04); }
+      .preview-box { position:relative; width:100%; padding-top:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background: linear-gradient(135deg, #eef2ff, #f5f3ff); display:block; }
+      .preview-box img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+      .filename { margin-top:10px; font-size:14px; color:#374151; word-break: break-all; display:flex; gap:8px; align-items:center; }
+      .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700; font-size:12px; }
+      .badge-green { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+      .badge-amber { background:#fffbeb; color:#92400e; border:1px solid #fcd34d; }
+      .actions { margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .btn { padding:10px 14px; border-radius:12px; font-weight:600; border:1px solid var(--border); background:#fff; cursor:pointer; }
+      .btn-primary { background:linear-gradient(90deg, var(--blue), #4f46e5); color:#fff; border:none; }
+      .gauge-wrap { width:100%; max-width:420px; margin: 0 auto 12px auto; }
+      .center { text-align:center; }
+      .muted { color:var(--muted); font-size:14px; }
+      .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+      .title { font-size:20px; font-weight:800; }
+      .reason { color:#374151; font-size:14px; line-height:1.5; }
+      .hidden { display:none; }
+    </style>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo"></div>
+        <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
+      </div>
+      <nav class="nav">
+        <a href="/" class="nav-link">Uploads</a>
+        <a href="#" class="nav-link">Bulk Editing</a>
+        <a href="#" class="nav-link">API</a>
+        <a href="#" class="nav-link">Plugins</a>
+        <a href="#" class="nav-link">Pricing</a>
+      </nav>
+      <div class="actions-inline">
+        <a href="#" class="btn-link">Log in</a>
+        <a href="#" class="btn-ghost">Sign up</a>
+      </div>
+    </header>
+
+    <div class="container">
+      <div id="loading" class="center hidden">
+        <h2 class="title" style="margin-bottom:8px;">Analyzing your file…</h2>
+        <p class="muted">This will only take a moment.</p>
+      </div>
+
+      <div id="empty" class="center hidden">
+        <h2 class="title" style="margin-bottom:8px;">No result to display</h2>
+        <p class="muted" style="margin-bottom:16px;">Upload a file to see the analysis results.</p>
+        <button class="btn btn-primary" onclick="window.location.href='/'">Go to Uploads</button>
+      </div>
+
+      <div id="error" class="center hidden">
+        <h2 class="title" style="margin-bottom:8px;">Analysis failed</h2>
+        <p id="error-msg" class="muted" style="margin-bottom:16px;"></p>
+        <button class="btn" onclick="window.location.href='/'">Back</button>
+        <button class="btn btn-primary" onclick="window.location.href='/'">Try Another File</button>
+      </div>
+
+      <div id="content" class="grid hidden">
+        <div class="card">
+          <div class="preview-box" id="preview-box">
+            <img id="preview-img" alt="preview" class="hidden" />
+          </div>
+          <div class="filename" id="file-row"></div>
+        </div>
+        <div class="card">
+          <div id="verdict-card"></div>
+          <div class="actions">
+            <button class="btn" onclick="window.location.href='/'">Back</button>
+            <button class="btn btn-primary" onclick="window.location.href='/'">Analyze Another File</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/result.ts"></script>
+    <style>
+      .app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}
+      .brand{display:flex;align-items:center;gap:10px}
+      .logo{width:34px;height:34px;background:linear-gradient(135deg,#0f66ff,#29cfff);border-radius:8px}
+      .brand-name{font-size:20px;font-weight:700;color:#111827;text-decoration:none}
+      .muted-2{color:#7f8790}
+      .nav{display:flex;gap:18px;color:#3a424a}
+      .nav-link{font-size:14px;font-weight:500;color:#3a424a;text-decoration:none}
+      .nav-link:hover{color:#111827}
+      .actions-inline{display:flex;gap:12px;align-items:center}
+      .btn-link{background:transparent;border:none;font-weight:600;cursor:pointer;color:#2d3a45;text-decoration:none}
+      .btn-link:hover{color:#111827}
+      .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
+      .btn-ghost:hover{background:#f0f4f7}
+    </style>
+  </body>
+  </html>

@@ -7,3 +7,5 @@ torchvision
 pydantic
 sqlalchemy
 psycopg2-binary
+easyocr
+numpy
