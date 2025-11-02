@@ -16,7 +16,21 @@ export default function UploadForm() {
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[], fileRejections: any[]) => {
+    // If rejected files present, notify user and abort
+    if (fileRejections && fileRejections.length > 0) {
+      const reasons: string[] = [];
+      try {
+        for (const rej of fileRejections) {
+          const name = rej?.file?.name || 'file';
+          const errs = Array.isArray(rej?.errors) ? rej.errors : [];
+          const msg = errs.map((e: any) => e?.message).filter(Boolean).join('; ');
+          reasons.push(`${name}: ${msg || 'File type not supported'}`);
+        }
+      } catch {}
+      setError(reasons.join(' \n'));
+      return;
+    }
     if (acceptedFiles.length === 0) return;
 
     const file = acceptedFiles[0];
@@ -85,6 +99,8 @@ export default function UploadForm() {
 
     try {
       const res = await analyzeFile(file);
+      // Save to local uploads history (successful server analysis)
+      try { await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: res }); } catch {}
       // Build a standalone HTML page with the results and open it in the pre-opened tab
       const html = buildResultHtml(
         {
@@ -121,6 +137,8 @@ export default function UploadForm() {
       // Fallback: perform a lightweight local analysis so the user still gets a result
       try {
         const localRes = await localAnalyzeFile(file, previewDataUrl, isImage);
+        // Save to local uploads history (local analysis)
+        try { await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: localRes as any }); } catch {}
         const html = buildResultHtml(
           {
             fileName: file.name,
@@ -176,6 +194,63 @@ export default function UploadForm() {
     }
   }, []);
 
+  async function createImageThumbnail(dataUrl: string, maxSize = 180): Promise<string | null> {
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            const scale = Math.min(maxSize / Math.max(w, h), 1);
+            const cw = Math.max(1, Math.round(w * scale));
+            const ch = Math.max(1, Math.round(h * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = cw; canvas.height = ch;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, cw, ch);
+              const out = canvas.toDataURL('image/jpeg', 0.8);
+              resolve(out);
+              return;
+            }
+          } catch {}
+          resolve(null);
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      } catch { resolve(null); }
+    });
+  }
+
+  async function saveLocalUpload(opts: { file: File; previewDataUrl: string | null; isImage: boolean; isPdf: boolean; result: any }) {
+    try {
+      const { file, previewDataUrl, isImage, isPdf, result } = opts;
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      let thumb: string | null = null;
+      if (isImage && previewDataUrl && previewDataUrl.startsWith('data:image')) {
+        try { thumb = await createImageThumbnail(previewDataUrl, 180); } catch { thumb = null; }
+      }
+      const entry = {
+        id,
+        ts: Date.now(),
+        fileName: file.name,
+        kind: isImage ? 'image' : (isPdf ? 'pdf' : 'text'),
+        previewUrl: previewDataUrl,
+        thumbUrl: thumb,
+        result,
+      };
+      const key = 'pg_uploads';
+      const raw = localStorage.getItem(key);
+      const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
+      arr.unshift(entry);
+      while (arr.length > 15) arr.pop();
+      localStorage.setItem(key, JSON.stringify(arr));
+    } catch {
+      // ignore persistence errors
+    }
+  }
+
   function buildResultHtml(
     payload: {
       fileName: string;
@@ -189,7 +264,9 @@ export default function UploadForm() {
   ) {
     const { fileName, previewUrl, isImage, isPdf, result, error } = payload;
     const verdict = result?.verdict;
-    const scorePct = Math.max(0, Math.min(100, Math.round((result?.score || 0) * 100)));
+    const details = (result?.details ?? {}) as AnalyzerDetails;
+    const finalScore = typeof (details as any).final_score === 'number' ? (details as any).final_score as number : (result?.score || 0);
+    const scorePct = Math.max(0, Math.min(100, Math.round((finalScore) * 100)));
     const color = verdict === "authentic" ? "#10b981" : "#f59e0b";
     const verdictTitle = error
       ? "Analysis failed"
@@ -198,17 +275,39 @@ export default function UploadForm() {
       : "Potentially AI-Generated";
     const reasonText = error || result?.reason || "";
 
-    const details = (result?.details ?? {}) as AnalyzerDetails;
-    const metaHits: string[] = Array.isArray(details.meta_hits) ? details.meta_hits : [];
-    const ocrHits: string[] = Array.isArray(details.ocr_hits) ? details.ocr_hits : [];
-    const entropy = typeof details.entropy === "number" ? details.entropy : undefined;
-    const width = (details as any).width || "";
-    const height = (details as any).height || "";
-    const ocrPreview = (details as any).ocr_preview || "";
-    const ocrFull = (details as any).ocr_full || (details as any).ocr_preview || "";
-    const metaMap = details.meta || {};
-    const metaKeysCount = typeof metaMap === "object" ? Object.keys(metaMap).length : 0;
-    const ocrWordCount = ocrFull ? ocrFull.trim().split(/\s+/).length : 0;
+  const metaHits: string[] = Array.isArray(details.meta_hits) ? details.meta_hits : [];
+  const ocrHits: string[] = Array.isArray(details.ocr_hits) ? details.ocr_hits : [];
+  const entropy = typeof details.entropy === "number" ? details.entropy : undefined;
+  const width = (details as any).width || "";
+  const height = (details as any).height || "";
+  const ocrPreview = (details as any).ocr_preview || "";
+  const ocrFull = (details as any).ocr_full || (details as any).ocr_preview || "";
+  const metaMap = details.meta || {};
+  const metaKeysCount = typeof metaMap === "object" ? Object.keys(metaMap).length : 0;
+  const metaFieldCount = (details as any).meta_field_count as number | undefined;
+  const effectiveMetaFields = typeof metaFieldCount === 'number' ? metaFieldCount : metaKeysCount;
+  const ocrWordCount = ocrFull ? ocrFull.trim().split(/\s+/).length : 0;
+  // New metrics
+  const edgeDensity = (details as any).edge_density as number | undefined;
+  const elaMean = (details as any).ela_mean as number | undefined;
+  const colorRatio = (details as any).color_unique_ratio as number | undefined;
+  const exifMissing = ((details as any).exif_missing || []) as string[];
+  const lapVar = (details as any).laplacian_var as number | undefined;
+  const flatRatio = (details as any).flat_block_ratio as number | undefined;
+  const jpegQtables = (details as any).jpeg_qtables_present as boolean | undefined;
+  const blockiness = (details as any).blockiness_score as number | undefined;
+  const chromaLuma = (details as any).chroma_luma_ratio as number | undefined;
+  const bMean = (details as any).brightness_mean as number | undefined;
+  const bStd = (details as any).brightness_std as number | undefined;
+  const sMean = (details as any).saturation_mean as number | undefined;
+  const sStd = (details as any).saturation_std as number | undefined;
+  const graySkew = (details as any).gray_skewness as number | undefined;
+  const darkRatio = (details as any).dark_ratio as number | undefined;
+  const brightRatio = (details as any).bright_ratio as number | undefined;
+  const aspectRatio = (details as any).aspect_ratio as number | undefined;
+  const megapixels = (details as any).megapixels as number | undefined;
+  const scoreBreakdown = (details as any).score_breakdown as Record<string, number> | undefined;
+  const textFeatures = (details as any).text_features as any;
 
     const gauge = !error
       ? `
@@ -226,17 +325,28 @@ export default function UploadForm() {
       </div>`
       : "";
 
+    const breakdownRows = (scoreBreakdown && Object.keys(scoreBreakdown).length)
+      ? Object.entries(scoreBreakdown).map(([k,v]) => {
+          const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+          const pct = (v * 100).toFixed(0);
+          return `<div>${label}</div><strong>${pct}%</strong>`;
+        }).join("")
+      : `
+            <div>Base score</div><strong>45%</strong>
+            <div>Metadata indicators</div><strong>${(metaHits.length ? 35 : 0).toFixed(0)}%</strong>
+            <div>OCR AI terms</div><strong>${(ocrHits.length ? 25 : 0).toFixed(0)}%</strong>
+            <div>Low-entropy bump</div><strong>${typeof entropy === "number" && entropy < 5.5 ? 5 : 0}%</strong>
+        `;
+
     const breakdownSection = !error
       ? `
       <section class="card" style="margin-top:16px;">
         <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Rating breakdown</h2>
         <div style="font-size:14px;color:#374151">
           <div style="display:grid;grid-template-columns:1fr auto;row-gap:6px;column-gap:12px;">
-            <div>Base score</div><strong>45%</strong>
-            <div>Metadata indicators</div><strong>${(metaHits.length ? 35 : 0).toFixed(0)}%</strong>
-            <div>OCR AI terms</div><strong>${(ocrHits.length ? 25 : 0).toFixed(0)}%</strong>
-            <div>Low-entropy bump</div><strong>${typeof entropy === "number" && entropy < 5.5 ? 5 : 0}%</strong>
+            ${breakdownRows}
           </div>
+          ${typeof finalScore === 'number' ? `<div style="margin-top:8px;font-size:14px;"><strong>Final score:</strong> ${(finalScore*100).toFixed(0)}%</div>` : ''}
           <hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb" />
           <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
@@ -256,10 +366,26 @@ export default function UploadForm() {
               <div style="font-weight:700;margin-bottom:6px;">Signal metrics</div>
               ${typeof entropy === "number" ? `<div>Entropy: <strong>${entropy.toFixed(2)}</strong></div>` : ""}
               ${width && height ? `<div>Dimensions: <strong>${width}×${height}</strong></div>` : ""}
-              ${metaKeysCount ? `<div>Metadata fields: <strong>${metaKeysCount}</strong></div>` : ""}
+              ${effectiveMetaFields ? `<div>Metadata fields: <strong>${effectiveMetaFields}</strong></div>` : ""}
               ${ocrWordCount ? `<div>Detected words: <strong>${ocrWordCount}</strong></div>` : ""}
+              ${typeof edgeDensity === 'number' ? `<div>Edge density: <strong>${edgeDensity.toFixed(3)}</strong></div>` : ''}
+              ${typeof elaMean === 'number' ? `<div>ELA mean: <strong>${elaMean.toFixed(2)}</strong></div>` : ''}
+              ${typeof colorRatio === 'number' ? `<div>Unique color ratio: <strong>${(colorRatio*100).toFixed(2)}%</strong></div>` : ''}
+              ${Array.isArray(exifMissing) && exifMissing.length ? `<div>Missing EXIF: <strong>${exifMissing.join(', ')}</strong></div>` : ''}
+              ${typeof lapVar === 'number' ? `<div>Laplacian variance: <strong>${lapVar.toFixed(2)}</strong></div>` : ''}
+              ${typeof flatRatio === 'number' ? `<div>Flat-block ratio: <strong>${(flatRatio*100).toFixed(1)}%</strong></div>` : ''}
+              ${typeof jpegQtables === 'boolean' ? `<div>JPEG quantization tables present: <strong>${jpegQtables ? 'yes' : 'no'}</strong></div>` : ''}
+              ${typeof blockiness === 'number' ? `<div>Blockiness score: <strong>${blockiness.toFixed(3)}</strong></div>` : ''}
+              ${typeof chromaLuma === 'number' ? `<div>Chroma/Luma ratio: <strong>${chromaLuma.toFixed(3)}</strong></div>` : ''}
+              ${typeof bMean === 'number' ? `<div>Brightness mean/std: <strong>${bMean.toFixed(1)}</strong> / <strong>${(bStd ?? 0).toFixed(1)}</strong></div>` : ''}
+              ${typeof sMean === 'number' ? `<div>Saturation mean/std: <strong>${sMean.toFixed(3)}</strong> / <strong>${(sStd ?? 0).toFixed(3)}</strong></div>` : ''}
+              ${typeof graySkew === 'number' ? `<div>Gray skewness: <strong>${graySkew.toFixed(3)}</strong></div>` : ''}
+              ${typeof darkRatio === 'number' ? `<div>Dark/Bright pixel ratio: <strong>${(darkRatio*100).toFixed(1)}%</strong> / <strong>${typeof brightRatio === 'number' ? (brightRatio*100).toFixed(1) : '0.0'}%</strong></div>` : ''}
+              ${typeof aspectRatio === 'number' ? `<div>Aspect ratio: <strong>${aspectRatio.toFixed(3)}</strong></div>` : ''}
+              ${typeof megapixels === 'number' ? `<div>Megapixels: <strong>${megapixels.toFixed(2)}</strong></div>` : ''}
             </div>
           </div>
+          ${textFeatures ? `<div style=\"margin-top:10px\"><strong>Text metrics:</strong> <span style=\"color:#6b7280\">TTR ${(textFeatures.ttr ?? 0).toFixed(2)}, Avg sentence len ${(textFeatures.avg_sentence_len ?? 0).toFixed(1)}, Top5 repetition ${(textFeatures.repetition_top5_share ? (textFeatures.repetition_top5_share*100).toFixed(1) : '0.0')}%, Stopword ratio ${(textFeatures.stopword_ratio ? (textFeatures.stopword_ratio*100).toFixed(1) : '0.0')}%, Digits ${(textFeatures.digit_ratio ? (textFeatures.digit_ratio*100).toFixed(1) : '0.0')}%, Punctuation ${(textFeatures.punct_ratio ? (textFeatures.punct_ratio*100).toFixed(1) : '0.0')}%</span></div>` : ''}
           ${ocrPreview ? `<div style="margin-top:10px"><strong>OCR preview:</strong> <span style="color:#6b7280">${ocrPreview.replace(/</g, "&lt;")}</span></div>` : ""}
           <p class="muted" style="margin-top:10px">This is a heuristic breakdown; not definitive proof.</p>
         </div>
@@ -446,7 +572,7 @@ export default function UploadForm() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
         <title>ProofGuard – Result</title>
         <style>
           :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
@@ -500,11 +626,11 @@ export default function UploadForm() {
         </script>
         <header class="app-header">
           <div class="brand">
-            <img src="/favicon.svg" alt="ProofGuard logo" class="logo" />
+            <img src="/favicon.svg?v=2" alt="ProofGuard logo" class="logo" />
             <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
           </div>
           <nav class="nav">
-            <a href="/" class="nav-link">Uploads</a>
+            <a href="/uploads.html" class="nav-link">Uploads</a>
             <a href="#" class="nav-link">Bulk Editing</a>
             <a href="#" class="nav-link">API</a>
             <a href="#" class="nav-link">Plugins</a>
@@ -624,8 +750,18 @@ export default function UploadForm() {
     validator: (file) => {
       const name = (file.name || '').toLowerCase();
       const type = (file.type || '').toLowerCase();
-      if (name.endsWith('.zip') || type === 'application/zip' || type === 'application/x-zip-compressed') {
-        return { code: 'file-invalid-type', message: 'ZIP files are not supported' } as const;
+      const blockedExts = ['.zip', '.exe', '.dmg'];
+      const blockedTypes = [
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-msdownload',
+        'application/x-apple-diskimage',
+      ];
+      const hasBlockedExt = blockedExts.some((ext) => name.endsWith(ext));
+      const hasBlockedType = blockedTypes.includes(type);
+      if (hasBlockedExt || hasBlockedType) {
+        let which = blockedExts.find((ext) => name.endsWith(ext)) || type || 'this file type';
+        return { code: 'file-invalid-type', message: `${which.replace(/^\./,'').toUpperCase()} files are not supported` } as const;
       }
       return null;
     },
