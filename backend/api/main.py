@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer.image_detector import analyze_image
 
-app = FastAPI(title="ProofGuard API")
+app = FastAPI(title="ProofGuard API", version="2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,10 +14,27 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "ProofGuard API",
+        "version": "2.0",
+        "supported_formats": [
+            "images (png, jpg, jpeg, gif, bmp, webp, svg)",
+            "documents (pdf, doc, docx, txt)",
+            "presentations (ppt, pptx)"
+        ]
+    }
 
 @app.post("/analyze")
 async def analyze(file: UploadFile = File(...)):
+    """
+    Analyze uploaded file for AI-generated content.
+    Supports multiple file formats including images, PDFs, and documents.
+    """
     data = await file.read()
-    result = analyze_image(data)
+    result = analyze_image(data, file.filename or "")
     return result
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "ProofGuard API"}
