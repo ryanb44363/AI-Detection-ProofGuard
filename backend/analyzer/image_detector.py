@@ -157,6 +157,7 @@ def analyze_image(data: bytes, filename: str = ""):
                     "meta_hits": meta_hits,
                     "ocr_hits": ocr_hits,
                     "ocr_preview": (ocr[:300] + ("…" if len(ocr) > 300 else "")) if ocr else "",
+                    "ocr_full": ocr or "",
                     "entropy": entropy,
                     "width": width,
                     "height": height,
@@ -169,11 +170,39 @@ def analyze_image(data: bytes, filename: str = ""):
 
     # Basic mocks for non-image files (extend as needed)
     if file_ext == "pdf":
-        score = random.uniform(0.3, 0.95)
+        # Try to extract text from PDF for keyword scanning
+        text = ""
+        try:
+            from io import BytesIO
+            from pdfminer.high_level import extract_text  # type: ignore
+            text = extract_text(BytesIO(data)) or ""
+        except Exception:
+            text = ""
+
+        ocr_hits = _find_hits(text) if text else []
+        score = 0.45
+        if ocr_hits:
+            score += 0.25
+        score = max(0.0, min(0.98, score))
+        verdict = "synthetic" if score > 0.7 else "authentic"
+        reason_bits: List[str] = [
+            "PDF analyzed.",
+        ]
+        if ocr_hits:
+            reason_bits.append(f"Detected AI-related terms in text: {', '.join(sorted(set(ocr_hits)))}.")
+        elif text:
+            reason_bits.append("Text extracted but no AI-specific keywords matched.")
+        else:
+            reason_bits.append("No text could be extracted from the PDF.")
         return {
             "score": score,
-            "verdict": "synthetic" if score > 0.7 else "authentic",
-            "reason": "PDF analyzed (mock). Text patterns and formatting examined.",
+            "verdict": verdict,
+            "reason": " ".join(reason_bits),
+            "details": {
+                "ocr_hits": ocr_hits,
+                "ocr_preview": (text[:300] + ("…" if len(text) > 300 else "")) if text else "",
+                "ocr_full": text or "",
+            },
         }
     if file_ext in ["doc", "docx", "txt"]:
         score = random.uniform(0.3, 0.95)

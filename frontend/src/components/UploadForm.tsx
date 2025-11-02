@@ -22,7 +22,7 @@ export default function UploadForm() {
     if (acceptedFiles.length === 0) return;
     
     const file = acceptedFiles[0];
-    // Open a blank tab immediately to avoid popup blockers; show a minimal loading UI
+    // Open a blank tab immediately to avoid popup blockers; show a loading animation
     const holdingTab = window.open('', '_blank');
     if (holdingTab && holdingTab.document) {
       try {
@@ -30,27 +30,34 @@ export default function UploadForm() {
         holdingTab.document.body.style.margin = '0';
         holdingTab.document.body.style.fontFamily = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
         holdingTab.document.body.innerHTML = `
+          <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+          </style>
           <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#fafafa;color:#374151;">
             <div style="text-align:center;">
-              <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:8px;">ProofGuard</div>
-              <div style="font-size:16px;">Analyzing your file…</div>
+              <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:10px;">ProofGuard</div>
+              <div style="display:inline-flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.06)">
+                <div style="width:18px;height:18px;border:3px solid #dbeafe;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+                <span style="font-size:14px;color:#374151;">Analyzing your file…</span>
+              </div>
             </div>
           </div>`;
         holdingTab.document.close();
       } catch { /* ignore */ }
     }
 
-    // Determine if image for preview generation
+  // Determine type for preview generation (image/pdf supported)
     const ext = file.name.split(".").pop()?.toLowerCase();
-    const img = ["png","jpg","jpeg","gif","bmp","webp","svg"].includes(ext || "");
+  const img = ["png","jpg","jpeg","gif","bmp","webp","svg"].includes(ext || "");
+  const isPdf = ext === 'pdf';
     setIsImage(img);
     setFileName(file.name);
     setError(null);
     setLoading(true);
     setResult(null);
-    // Prepare preview data URL for images (so new tab can render without blob revocation)
+    // Prepare preview data URL for images or PDFs (so new tab can render without blob revocation)
     let previewDataUrl: string | null = null;
-    if (img) {
+    if (img || isPdf) {
       try {
         previewDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -72,8 +79,9 @@ export default function UploadForm() {
         // Build a standalone HTML page with the results and open it in the pre-opened tab
         const html = buildResultHtml({
           fileName: file.name,
-          previewUrl: img ? previewDataUrl : null,
+          previewUrl: (img || isPdf) ? previewDataUrl : null,
           isImage: img,
+          isPdf,
           result: res,
         }, window.location.origin);
         if (holdingTab && holdingTab.document) {
@@ -98,8 +106,9 @@ export default function UploadForm() {
           setResult(localRes);
           const html = buildResultHtml({
             fileName: file.name,
-            previewUrl: img ? previewDataUrl : null,
+            previewUrl: (img || isPdf) ? previewDataUrl : null,
             isImage: img,
+            isPdf,
             result: localRes,
           }, window.location.origin);
           const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
@@ -113,8 +122,9 @@ export default function UploadForm() {
           // If even fallback fails, show error page
           const html = buildResultHtml({
             fileName: file.name,
-            previewUrl: img ? previewDataUrl : null,
+            previewUrl: (img || isPdf) ? previewDataUrl : null,
             isImage: img,
+            isPdf,
             error: msg,
           }, window.location.origin);
           if (holdingTab && holdingTab.document) {
@@ -136,8 +146,8 @@ export default function UploadForm() {
     }
   }, []);
 
-  function buildResultHtml(payload: { fileName: string; previewUrl: string | null; isImage: boolean; result?: AnalysisResult & { [k: string]: any }; error?: string }, origin: string) {
-    const { fileName, previewUrl, isImage, result, error } = payload;
+  function buildResultHtml(payload: { fileName: string; previewUrl: string | null; isImage: boolean; isPdf?: boolean; result?: AnalysisResult & { [k: string]: any }; error?: string }, origin: string) {
+    const { fileName, previewUrl, isImage, isPdf, result, error } = payload;
     const verdict = result?.verdict;
     const scorePct = Math.max(0, Math.min(100, Math.round((result?.score || 0) * 100)));
     const color = verdict === 'authentic' ? '#10b981' : '#f59e0b';
@@ -172,13 +182,17 @@ export default function UploadForm() {
       </div>` : '';
 
     // Build rating breakdown if details are present (from server) or synthesize basic info
-    const details: any = (result as any)?.details || {};
+  const details: any = (result as any)?.details || {};
     const metaHits: string[] = Array.isArray(details.meta_hits) ? details.meta_hits : [];
     const ocrHits: string[] = Array.isArray(details.ocr_hits) ? details.ocr_hits : [];
     const entropy = typeof details.entropy === 'number' ? details.entropy : undefined;
     const width = details.width || '';
     const height = details.height || '';
-    const ocrPreview = details.ocr_preview || '';
+  const ocrPreview = details.ocr_preview || '';
+  const ocrFull = details.ocr_full || details.ocr_preview || '';
+  const metaMap = details.meta || {};
+  const metaKeysCount = typeof metaMap === 'object' ? Object.keys(metaMap).length : 0;
+  const ocrWordCount = ocrFull ? (ocrFull.trim().split(/\s+/).length) : 0;
     const metaBump = metaHits.length > 0 ? 0.35 : 0;
     const ocrBump = ocrHits.length > 0 ? 0.25 : 0;
     const entropyBump = typeof entropy === 'number' && entropy < 5.5 ? 0.05 : 0;
@@ -188,23 +202,38 @@ export default function UploadForm() {
       <section class="card" style="margin-top:16px;">
         <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Rating breakdown</h2>
         <div style="font-size:14px;color:#374151">
-          <div style="display:flex;justify-content:space-between"><span>Base score</span><strong>${(baseScore*100).toFixed(0)}%</strong></div>
-          <div style="display:flex;justify-content:space-between"><span>Metadata indicators</span><strong>${(metaBump*100).toFixed(0)}%</strong></div>
-          <div style="display:flex;justify-content:space-between"><span>OCR AI terms</span><strong>${(ocrBump*100).toFixed(0)}%</strong></div>
-          <div style="display:flex;justify-content:space-between"><span>Low-entropy bump</span><strong>${(entropyBump*100).toFixed(0)}%</strong></div>
+          <div style="display:grid;grid-template-columns:1fr auto;row-gap:6px;column-gap:12px;">
+            <div>Base score</div><strong>${(baseScore*100).toFixed(0)}%</strong>
+            <div>Metadata indicators</div><strong>${(metaBump*100).toFixed(0)}%</strong>
+            <div>OCR AI terms</div><strong>${(ocrBump*100).toFixed(0)}%</strong>
+            <div>Low-entropy bump</div><strong>${(entropyBump*100).toFixed(0)}%</strong>
+          </div>
           <hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb" />
           <div style="display:flex;justify-content:space-between"><span>Computed (heuristic)</span><strong>${(computed*100).toFixed(0)}%</strong></div>
-          ${(metaHits.length || ocrHits.length || entropy !== undefined) ? `
-            <div style="margin-top:10px">
-              ${metaHits.length ? `<div><strong>Metadata hits:</strong> ${metaHits.map(h=>`<code>${h}</code>`).join(', ')}</div>` : ''}
-              ${ocrHits.length ? `<div style="margin-top:6px"><strong>OCR hits:</strong> ${ocrHits.map(h=>`<code>${h}</code>`).join(', ')}</div>` : ''}
-              ${typeof entropy === 'number' ? `<div style=\"margin-top:6px\"><strong>Entropy:</strong> ${entropy.toFixed(2)}</div>` : ''}
-              ${(width&&height) ? `<div style="margin-top:6px"><strong>Dimensions:</strong> ${width}×${height}</div>` : ''}
-              ${ocrPreview ? `<div style="margin-top:6px"><strong>OCR preview:</strong> <span style="color:#6b7280">${ocrPreview.replace(/</g,'&lt;')}</span></div>` : ''}
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-weight:700;margin-bottom:6px;">Indicators detected</div>
+              ${metaHits.length ? `<div><strong>Metadata hits:</strong> ${metaHits.map(h=>`<code>${h}</code>`).join(', ')}</div>` : '<div>No explicit AI metadata markers found.</div>'}
+              ${ocrHits.length ? `<div style="margin-top:6px"><strong>OCR hits:</strong> ${ocrHits.map(h=>`<code>${h}</code>`).join(', ')}</div>` : '<div style="margin-top:6px">No AI keywords found in detected text.</div>'}
             </div>
-          ` : ''}
+            <div>
+              <div style="font-weight:700;margin-bottom:6px;">Signal metrics</div>
+              ${typeof entropy === 'number' ? `<div>Entropy: <strong>${entropy.toFixed(2)}</strong></div>` : ''}
+              ${(width&&height) ? `<div>Dimensions: <strong>${width}×${height}</strong></div>` : ''}
+              ${metaKeysCount ? `<div>Metadata fields: <strong>${metaKeysCount}</strong></div>` : ''}
+              ${ocrWordCount ? `<div>Detected words: <strong>${ocrWordCount}</strong></div>` : ''}
+            </div>
+          </div>
+          ${ocrPreview ? `<div style="margin-top:10px"><strong>OCR preview:</strong> <span style="color:#6b7280">${ocrPreview.replace(/</g,'&lt;')}</span></div>` : ''}
           <p class="muted" style="margin-top:10px">This is a heuristic breakdown; not definitive proof.</p>
         </div>
+      </section>
+    ` : '';
+
+    const detectedTextSection = (!error && ocrFull) ? `
+      <section class="card" style="margin-top:16px;">
+        <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">Detected text (transcription)</h2>
+        <div style="max-height:260px;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;white-space:pre-wrap;color:#374151;font-size:14px;">${ocrFull.replace(/</g,'&lt;')}</div>
       </section>
     ` : '';
 
@@ -237,6 +266,8 @@ export default function UploadForm() {
           .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 6px 20px rgba(0,0,0,.04); }
           .preview-box { position:relative; width:100%; padding-top:100%; border-radius:12px; overflow:hidden; border:1px solid var(--border); background: linear-gradient(135deg, #eef2ff, #f5f3ff); display:block; }
           .preview-box img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+          .preview-pdf { position:relative; width:100%; height:520px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; }
+          .preview-pdf iframe, .preview-pdf embed, .preview-pdf object { position:absolute; inset:0; width:100%; height:100%; border:0; }
           .filename { margin-top:10px; font-size:14px; color:#374151; word-break: break-all; display:flex; gap:8px; align-items:center; }
           .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700; font-size:12px; }
           .badge-green { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
@@ -281,9 +312,19 @@ export default function UploadForm() {
         <div class="container">
           <div class="grid">
             <div class="card">
-              <div class="preview-box">
-                ${isImage && previewUrl ? `<img src="${previewUrl}" alt="${fileName}" />` : ''}
-              </div>
+              ${isImage && previewUrl ? `
+                <div class="preview-box">
+                  <img src="${previewUrl}" alt="${fileName}" />
+                </div>
+              ` : (isPdf && previewUrl ? `
+                <div class="preview-pdf">
+                  <iframe src="${previewUrl}#view=FitH" title="${fileName}"></iframe>
+                </div>
+              ` : `
+                <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
+                  <div class="muted">No preview available</div>
+                </div>
+              `)}
               <div class="filename">${isImage ? '🖼️' : '📎'} <span>${fileName}</span></div>
             </div>
             <div class="card">
@@ -300,6 +341,7 @@ export default function UploadForm() {
             </div>
           </div>
           ${breakdownSection}
+          ${detectedTextSection}
         </div>
         <footer style="border-top:1px solid #e5e7eb; background:#fff; margin-top:16px;">
           <div class="container" style="padding-top:16px;padding-bottom:12px;">
