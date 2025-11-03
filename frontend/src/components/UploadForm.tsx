@@ -279,6 +279,40 @@ export default function UploadForm() {
             <div>Low-entropy bump</div><strong>${typeof entropy === "number" && entropy < 5.5 ? 5 : 0}%</strong>
         `;
 
+    const aspectsHTML = (() => {
+      const sb = (scoreBreakdown || {}) as Record<string, number>;
+      const aspectsBase = [ { key: 'base', label: 'Base score', weight: 0.45 } ];
+      const aspectsImg = [
+        {key:'metadata_hits', label:'Metadata indicators', weight:0.35},
+        {key:'ocr_hits', label:'OCR AI terms', weight:0.25},
+        {key:'low_entropy', label:'Low entropy', weight:0.05},
+        {key:'low_edge_density', label:'Low edge density', weight:0.04},
+        {key:'low_ela_mean', label:'Low ELA mean', weight:0.03},
+        {key:'low_color_uniqueness', label:'Low color uniqueness', weight:0.04},
+        {key:'missing_exif', label:'Missing EXIF', weight:0.04},
+        {key:'low_laplacian', label:'Low Laplacian variance', weight:0.02},
+        {key:'flat_blocks', label:'Flat-block ratio', weight:0.03},
+        {key:'very_smooth_low_blockiness', label:'Very smooth, low blockiness', weight:0.01},
+      ];
+      const aspectsText = [
+        {key:'ocr_hits', label:'Keyword/AI term hits', weight:0.25},
+        {key:'high_repetition_low_ttr', label:'High repetition, low TTR', weight:0.06},
+        {key:'avg_sentence_len_mid', label:'Average sentence length (mid)', weight:0.01},
+        {key:'keyword_hits', label:'Keyword hits', weight:0.25},
+      ];
+      const pick = isImage ? aspectsImg : aspectsText;
+      const aspects = aspectsBase.concat(pick);
+      return aspects.map((a) => {
+        const val = typeof sb[a.key] === 'number' ? sb[a.key] : 0;
+        const cur = Math.round(val * 100);
+        const max = Math.round(a.weight * 100);
+        return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;">
+          <div style="font-size:13px;color:#374151">${a.label}</div>
+          <div style="font-weight:700">${cur}% <span class=\"muted\" style=\"font-weight:500\">/ ${max}%</span></div>
+        </div>`;
+      }).join('');
+    })();
+
     const breakdownSection = !error
       ? `
       <section class="card" style="margin-top:16px;">
@@ -328,6 +362,12 @@ export default function UploadForm() {
           </div>
           ${textFeatures ? `<div style=\"margin-top:10px\"><strong>Text metrics:</strong> <span style=\"color:#6b7280\">TTR ${(textFeatures.ttr ?? 0).toFixed(2)}, Avg sentence len ${(textFeatures.avg_sentence_len ?? 0).toFixed(1)}, Top5 repetition ${(textFeatures.repetition_top5_share ? (textFeatures.repetition_top5_share*100).toFixed(1) : '0.0')}%, Stopword ratio ${(textFeatures.stopword_ratio ? (textFeatures.stopword_ratio*100).toFixed(1) : '0.0')}%, Digits ${(textFeatures.digit_ratio ? (textFeatures.digit_ratio*100).toFixed(1) : '0.0')}%, Punctuation ${(textFeatures.punct_ratio ? (textFeatures.punct_ratio*100).toFixed(1) : '0.0')}%</span></div>` : ''}
           ${ocrPreview ? `<div style="margin-top:10px"><strong>OCR preview:</strong> <span style="color:#6b7280">${ocrPreview.replace(/</g, "&lt;")}</span></div>` : ""}
+          <hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb" />
+          <div>
+            <div style="font-weight:700;margin-bottom:8px;">Aspects and contributions</div>
+            <div class="muted" style="font-size:12px;margin-bottom:6px">TEST: aspects section rendered</div>
+            ${aspectsHTML}
+          </div>
           <p class="muted" style="margin-top:10px">This is a heuristic breakdown; not definitive proof.</p>
         </div>
       </section>`
