@@ -34,8 +34,8 @@
       .btn { padding:8px 12px; border-radius:10px; font-weight:600; border:1px solid var(--border); background:#fff; cursor:pointer; text-decoration:none; }
       .btn-danger { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
 
-      .rows { display:flex; flex-direction:column; gap:8px; }
-      .row { display:grid; grid-template-columns: 48px 1fr 100px 90px 110px; align-items:center; gap:12px; padding:10px; border:1px solid var(--border); border-radius:12px; background:#fff; }
+  .rows { display:flex; flex-direction:column; gap:8px; }
+  .row { display:grid; grid-template-columns: 48px 1fr 100px 90px 110px 90px; align-items:center; gap:12px; padding:10px; border:1px solid var(--border); border-radius:12px; background:#fff; }
       .thumb { width:48px; height:48px; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; background: #f3f4f6; border:1px solid var(--border); font-size:18px; }
       .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
       .name { font-size:14px; color:#111827; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -148,15 +148,59 @@
               ];
               const pick = isImg ? aspectsImg : (isPdf ? aspectsText : aspectsText);
               const aspects = aspectsBase.concat(pick);
-              return aspects.map(a => {
+              const rows = aspects.map(a => {
                 const val = typeof sb[a.key] === 'number' ? sb[a.key] : 0;
                 const pct = Math.round(val*100);
-                const max = Math.round(a.weight*100);
+                if (pct === 0) return '';
+                const max = Math.round((a.weight||0)*100);
                 return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;">
                   <div style="font-size:13px;color:#374151">${a.label}</div>
                   <div style="font-weight:700">${pct}% <span class="muted" style="font-weight:500">/ ${max}%</span></div>
                 </div>`;
-              }).join('');
+              }).filter(Boolean);
+              if (!rows.length) {
+                return `<div class="muted" style="font-size:13px">No contributing aspects detected</div>`;
+              }
+              return rows.join('');
+            })()}
+          </div>
+          <hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb" />
+          <div>
+            <div style="font-weight:700;margin-bottom:8px;">Rating breakdown</div>
+            ${(() => {
+              const details = (payload.result && payload.result.details) || {};
+              const sb = details.score_breakdown || {};
+              const entries = Object.keys(sb).filter(k => typeof sb[k] === 'number').map(k => ({ key:k, val: sb[k] }))
+                .filter(x => x.val > 0);
+              if (!entries.length) {
+                return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;">
+                  <div style="font-size:13px;color:#374151">Overall</div>
+                  <div style="font-weight:700">${scorePct}%</div>
+                </div>`;
+              }
+              const labelMap = {
+                base:'Base score', metadata_hits:'Metadata indicators', ocr_hits:'OCR AI terms', low_entropy:'Low entropy', low_edge_density:'Low edge density',
+                low_ela_mean:'Low ELA mean', low_color_uniqueness:'Low color uniqueness', missing_exif:'Missing EXIF', low_laplacian:'Low Laplacian variance',
+                flat_blocks:'Flat-block ratio', very_smooth_low_blockiness:'Very smooth, low blockiness', high_repetition_low_ttr:'High repetition, low TTR',
+                avg_sentence_len_mid:'Average sentence length (mid)', keyword_hits:'Keyword hits'
+              };
+              entries.sort((a,b) => b.val - a.val);
+              const rows = entries.map(e => {
+                const pct = Math.round(e.val * 100);
+                return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;">
+                  <div style="font-size:13px;color:#374151">${labelMap[e.key] || e.key}</div>
+                  <div style="font-weight:700">${pct}%</div>
+                </div>`;
+              });
+              const sum = entries.reduce((acc, e) => acc + (e.val || 0), 0);
+              const residual = finalScore - sum;
+              if (residual > 0.005) {
+                rows.push(`<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;">
+                  <div style="font-size:13px;color:#374151">Additional signals</div>
+                  <div style="font-weight:700">${Math.round(residual*100)}%</div>
+                </div>`);
+              }
+              return rows.join('');
             })()}
           </div>
           </div></div></div></body></html>`;
@@ -169,10 +213,13 @@
         const raw = localStorage.getItem('pg_uploads');
         let arr = [];
         try { const parsed = JSON.parse(raw || '[]'); arr = Array.isArray(parsed) ? parsed : []; } catch { arr = []; }
-        if (!arr.length) { rows.style.display='none'; empty.style.display='block'; return; }
-        rows.style.display='flex'; empty.style.display='none';
-        rows.innerHTML = '';
-        arr.forEach(entry => {
+  if (!arr.length) { rows.style.display='none'; empty.style.display='block'; return; }
+  // Sort by newest first and limit to 15 entries
+  arr.sort((a,b) => (Number(b.ts)||0) - (Number(a.ts)||0));
+  arr = arr.slice(0, 15);
+  rows.style.display='flex'; empty.style.display='none';
+  rows.innerHTML = '';
+  arr.forEach(entry => {
           const verdict = (entry.result && entry.result.verdict) || 'unknown';
           const details = (entry.result && entry.result.details) || {};
           const finalScore = (typeof details.final_score==='number') ? details.final_score : (entry.result && entry.result.score) || 0;
@@ -210,7 +257,7 @@
             // Open in the same tab rather than a new one
             window.location.href = blobUrl;
           }
-        }, { once: true });
+        });
       }
 
       document.getElementById('clear-btn').addEventListener('click', function(){

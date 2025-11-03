@@ -67,24 +67,28 @@
     .btn-ghost:hover{background:#f0f4f7}
 
     /* Main layout */
-  .main { display:grid; grid-template-columns: 1.1fr .9fr; gap:32px; max-width:1180px; margin:0 auto; padding:20px 32px 40px; min-height: calc(100vh - 60px - 42px); }
-      .hero-left { display:flex; flex-direction:column; justify-content:center; gap:24px; }
-      .hero-art { position:relative; width:360px; height:230px; }
-      .hero-bg { position:absolute; inset:18px 0 0 0; height:190px; background:#ffca56; border-radius:72px; box-shadow: inset 0 -8px 24px rgba(0,0,0,.08), 0 24px 40px rgba(255,202,86,.25); animation: float 6s ease-in-out infinite; }
-      .hero-blob { position:absolute; top:-26px; right:-30px; width:120px; height:120px; background: radial-gradient(circle at 30% 30%, #ff7ad9, #ff4bb1); border-radius: 38% 62% 63% 37% / 45% 36% 64% 55%; filter: blur(2px); opacity:.85; animation: blob 8s ease-in-out infinite; }
-      .hero-person { position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); width:210px; height:210px; border-radius:999px; object-fit:cover; box-shadow: 0 18px 44px rgba(15,61,130,.2); }
-      .title { font-size: clamp(2.4rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
-      .subtitle { font-size: 1.05rem; color: #5a6471; font-weight: 600; }
+  .main { max-width:1100px; margin:0 auto; padding:18px 20px 28px; min-height: calc(100vh - 60px - 42px); }
+  .hero-shell { background: radial-gradient(1200px 600px at -20% -40%, #eef6ff, transparent 60%), #fff; border:1px solid var(--stroke); border-radius: var(--radius-xl); box-shadow: 0 18px 30px rgba(15,61,130,.08); padding: 18px; }
+  .hero-grid { display:grid; grid-template-columns: 1.1fr 0.9fr; gap:22px; align-items:center; }
+      .hero-left { display:flex; flex-direction:column; justify-content:center; gap:16px; padding: 10px 14px; }
+      .hero-art { position:relative; width:320px; height:210px; }
+      .hero-bg { position:absolute; inset:18px 0 0 0; height:160px; background:#ffca56; border-radius:56px; box-shadow: inset 0 -6px 18px rgba(0,0,0,.08), 0 18px 30px rgba(255,202,86,.22); animation: float 6s ease-in-out infinite; }
+      .hero-blob { position:absolute; top:-18px; right:-18px; width:90px; height:90px; background: radial-gradient(circle at 30% 30%, #ff7ad9, #ff4bb1); border-radius: 38% 62% 63% 37% / 45% 36% 64% 55%; filter: blur(2px); opacity:.85; animation: blob 8s ease-in-out infinite; }
+      .hero-person { position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:176px; height:176px; border-radius:999px; object-fit:cover; box-shadow: 0 14px 30px rgba(15,61,130,.18); }
+      .title { font-size: clamp(2.2rem, 4.4vw, 3rem); font-weight: 900; line-height: 1.02; letter-spacing: -.02em; }
+      .subtitle { font-size: 1rem; color: #5a6471; font-weight: 600; }
       .subtitle strong { color:#111827; }
+      .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:2px; }
+      .chip { background:#f1f5f9; border:1px solid #e2e8f0; color:#0f172a; font-weight:700; font-size:12px; padding:6px 10px; border-radius:999px; }
 
       /* Right upload card */
-  .hero-right { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; gap:14px; }
-  .upload-card { width:min(420px, 100%); background: color-mix(in oklab, #ffffff 94%, #ffffff 86%); border-radius: 26px; box-shadow: 0 14px 28px rgba(15,61,130,.10); padding: 22px 22px 18px; text-align:center; border: 1px solid rgba(25,118,255,.08); position:relative; overflow:hidden; }
-      .upload-card::before { content:""; position:absolute; inset:-2px; border-radius: inherit; padding:2px; background: linear-gradient(120deg, rgba(15,122,255,.25), rgba(111,67,255,.25)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
-      .upload-btn { background: linear-gradient(90deg, var(--blue), var(--purple)); color:#fff; border:0; border-radius: 9999px; padding: 16px 30px; font-size:1.05rem; font-weight:800; cursor: pointer; width: fit-content; margin: 0 auto 14px auto; display:block; box-shadow: 0 12px 24px rgba(15,122,255,.25); transition: transform .15s ease; }
+  .hero-right { display:flex; flex-direction:column; justify-content:flex-start; align-items:center; gap:10px; padding: 6px; }
+  .upload-card { width:min(460px, 100%); min-height: 240px; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.98)); border-radius: 22px; box-shadow: 0 18px 28px rgba(15,61,130,.10); padding: 20px 18px 16px; text-align:center; border: 1px solid rgba(25,118,255,.08); position:relative; overflow:hidden; }
+  .upload-card::before { content:""; position:absolute; inset:-2px; border-radius: inherit; padding:2px; background: linear-gradient(120deg, rgba(15,122,255,.25), rgba(111,67,255,.25)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; }
+    .upload-btn { background: linear-gradient(90deg, var(--blue), var(--purple)); color:#fff; border:0; border-radius: 9999px; padding: 14px 24px; font-size:1rem; font-weight:800; cursor: pointer; width: fit-content; margin: 0 auto 10px auto; display:block; box-shadow: 0 10px 22px rgba(15,122,255,.22); transition: transform .15s ease; }
       .upload-btn:hover { transform: translateY(-1px); }
-      .upload-alt { font-size:.95rem; color:#6b7580; }
-      .upload-alt a { color: var(--blue); font-weight: 700; }
+    .upload-alt { font-size:.92rem; color:#6b7580; }
+      .upload-alt a { color: var(--blue); font-weight: 800; }
       .no-image { margin-top: 22px; border-top:1px solid var(--stroke); padding-top: 16px; font-size:.8rem; color:#6b7580; display:flex; flex-direction:column; gap:10px; align-items:center; }
       .sample-avatars { display:flex; gap:8px; }
       .sample-avatars img { width:46px; height:46px; border-radius:999px; object-fit:cover; border:2px solid #fff; box-shadow: 0 6px 14px rgba(0,0,0,.12); }
@@ -93,20 +97,60 @@
   .react-host { position:absolute; inset:0; }
 
       /* Animations */
-      @keyframes spin { to { transform: rotate(1turn); } }
-      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes spin { to { transform: rotate(1turn); } }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(6px,-4px) scale(1.03); } 66% { transform: translate(-4px,5px) scale(0.98); } }
 
       /* Responsive */
       @media (max-width: 1024px) {
-        .main { grid-template-columns: 1fr; padding: 24px 18px 36px; gap: 28px; text-align:center; }
+        .hero-grid { grid-template-columns: 1fr; }
+        .main { padding: 18px 16px 26px; gap: 18px; text-align:center; }
         .hero-left, .hero-right { align-items:center; }
         .hero-art { margin: 0 auto; }
       }
       @media (max-width: 720px) {
         .navbar { padding: 0 14px; height:60px; }
-        .main { padding: 18px 14px 28px; gap: 22px; }
-        .upload-card { padding: 18px 14px 16px; border-radius: 22px; }
+        .main { padding: 14px 12px 22px; gap: 16px; }
+        .upload-card { padding: 16px 12px 14px; border-radius: 20px; }
       }
+
+      /* Quick info + recent uploads */
+      .info-bar { max-width:1100px; margin: 0 auto; padding: 0 20px 18px; display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+      .info-card { background:#fff; border:1px solid var(--stroke); border-radius:14px; padding:10px 12px; box-shadow: 0 6px 14px rgba(0,0,0,.04); }
+      .info-title { font-weight:800; font-size:12px; color:#374151; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+      .info-body { font-size:13px; color:#111827; }
+      .recent { max-width:1100px; margin: 0 auto; padding: 0 20px 28px; }
+      .recent h2 { font-size:16px; font-weight:800; margin: 4px 0 10px; }
+      .recent-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+      .recent-card { border:1px solid var(--stroke); border-radius:12px; padding:10px; background:#fff; box-shadow: 0 6px 12px rgba(0,0,0,.04); display:grid; grid-template-columns: 40px 1fr auto; gap:10px; align-items:center; }
+      .recent-thumb { width:40px; height:40px; border-radius:10px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:18px; }
+      .recent-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+      .recent-name { font-size:13px; font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .recent-badge { font-size:11px; font-weight:800; padding:4px 8px; border-radius:999px; }
+      .badge-green { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+      .badge-amber { background:#fffbeb; color:#92400e; border:1px solid #fcd34d; }
+      .recent-empty { color:#6b7280; font-size:13px; padding:10px; }
+      @media (max-width: 900px) { .recent-grid { grid-template-columns: repeat(2, 1fr); } .info-bar { grid-template-columns: 1fr; } }
+
+      /* Deeper content sections */
+      .section { max-width:1100px; margin: 0 auto; padding: 0 20px 34px; }
+      .h2 { font-size:20px; font-weight:800; margin: 4px 0 12px; }
+      .steps { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+      .step-card { background:#fff; border:1px solid var(--stroke); border-radius:14px; padding:14px; box-shadow: 0 6px 14px rgba(0,0,0,.04); display:grid; grid-template-columns: 40px 1fr; gap:10px; align-items:flex-start; }
+      .step-icon { width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:#eef2ff; border:1px solid #e5e7eb; color:#4f46e5; font-weight:800; }
+      .step-title { font-weight:800; font-size:14px; color:#0f172a; margin-bottom:4px; }
+      .step-text { color:#374151; font-size:13px; line-height:1.45; }
+      .signal-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; }
+      .signal { background:#fff; border:1px solid var(--stroke); border-radius:12px; padding:10px; box-shadow: 0 6px 12px rgba(0,0,0,.04); }
+      .signal b { display:block; font-size:13px; color:#0f172a; margin-bottom:4px; }
+      .signal p { margin:0; font-size:12px; color:#374151; }
+      .two-col { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+      .card-plain { background:#fff; border:1px solid var(--stroke); border-radius:12px; padding:12px; }
+      .cta-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      .cta { padding:10px 12px; border-radius:12px; border:1px solid var(--stroke); font-weight:800; color:#0f7aff; background:#fff; text-decoration:none; }
+      .cta.primary { background:linear-gradient(90deg, var(--blue), var(--purple)); color:#fff; border:none; }
+      @media (max-width: 980px) { .steps { grid-template-columns: 1fr; } .signal-grid { grid-template-columns: 1fr 1fr; } .two-col { grid-template-columns: 1fr; } }
+      @media (max-width: 620px) { .signal-grid { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
@@ -133,39 +177,160 @@
       </div>
     </header>
 
-    <!-- Main hero -->
+  <!-- Main hero -->
     <main class="main">
-      <!-- Left -->
-      <section class="hero-left">
-        <div class="hero-art" aria-hidden="true">
-          <div class="hero-bg"></div>
-          <div class="hero-blob"></div>
-          <img class="hero-person" alt="Smiling person" src="https://images.pexels.com/photos/4065876/pexels-photo-4065876.jpeg?auto=compress&cs=tinysrgb&w=400" />
+      <div class="hero-shell">
+        <div class="hero-grid">
+          <!-- Left -->
+          <section class="hero-left">
+            <div class="hero-art" aria-hidden="true">
+              <div class="hero-bg"></div>
+              <div class="hero-blob"></div>
+              <img class="hero-person" alt="Smiling person" src="https://images.pexels.com/photos/4065876/pexels-photo-4065876.jpeg?auto=compress&cs=tinysrgb&w=400" />
+            </div>
+            <h1 class="title">Detect AI<br/>Content</h1>
+            <p class="subtitle">100% Automatically and <strong>Free</strong></p>
+            <div class="chips" aria-hidden="true">
+              <span class="chip">Images</span>
+              <span class="chip">PDFs</span>
+              <span class="chip">Text</span>
+            </div>
+          </section>
+
+          <!-- Right: Upload card with React mount inside -->
+          <section class="hero-right">
+            <div class="upload-card" role="region" aria-label="Upload">
+              <!-- React mounts here; UploadForm UI will replace the placeholder button behavior -->
+              <div class="react-host">
+                <div id="root"></div>
+              </div>
+            </div>
+          </section>
         </div>
-        <h1 class="title">Detect AI<br/>Content</h1>
-        <p class="subtitle">100% Automatically and <strong>Free</strong></p>
-      </section>
-
-      <!-- Right: Upload card with React mount inside -->
-      <section class="hero-right">
-        <div class="upload-card" role="region" aria-label="Upload card">
-          <!-- Add hero text above the button within this section only -->
-          <div style="margin-bottom:12px;">
-            <div style="font-size:1.1rem;font-weight:800;letter-spacing:-.01em;">Detect AI Content</div>
-            <div style="font-size:.95rem;color:#6b7580;font-weight:600;">100% Automatically and <strong style="color:#111827">Free</strong></div>
-          </div>
-
-          <button class="upload-btn" onclick="document.querySelector('#root input[type=file]')?.click?.()">Upload or Drop File</button>
-          
-
-          <!-- React mounts here; UploadForm UI will replace the placeholder button behavior -->
-          <div class="react-host">
-            <div id="root"></div>
-          </div>
-        </div>
-      </section>
+      </div>
     </main>
 
+    <!-- Quick info row -->
+    <section class="info-bar" aria-label="Key info">
+      <div class="info-card">
+        <div class="info-title">Supported</div>
+        <div class="info-body">Images (PNG/JPG/WebP), PDFs, and plain text.</div>
+      </div>
+      <div class="info-card">
+        <div class="info-title">Local history</div>
+        <div class="info-body">Your last 15 uploads are saved only in your browser.</div>
+      </div>
+      <div class="info-card">
+        <div class="info-title">How it works</div>
+        <div class="info-body">We analyze metadata, text signals, and visual forensics to estimate likelihood.</div>
+      </div>
+    </section>
+
+    <!-- Recent uploads preview -->
+    <section class="recent" aria-label="Recent uploads">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <h2>Recent uploads</h2>
+        <a href="/uploads.html" style="font-size:12px;font-weight:700;color:#0f7aff">View all →</a>
+      </div>
+      <div id="recent-grid" class="recent-grid"></div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" aria-label="How it works">
+      <div class="h2">How ProofGuard works</div>
+      <div class="steps">
+        <div class="step-card">
+          <div class="step-icon">①</div>
+          <div>
+            <div class="step-title">Upload or drop</div>
+            <div class="step-text">Add an image, PDF, or text. We generate an in-page preview where possible to show what’s being analyzed.</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-icon">②</div>
+          <div>
+            <div class="step-title">Analyze multiple signals</div>
+            <div class="step-text">We combine metadata checks, text cues, and visual forensics (like edge density and ELA) to estimate likelihood.</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-icon">③</div>
+          <div>
+            <div class="step-title">Score + explanation</div>
+            <div class="step-text">You’ll get a confidence score with a breakdown of top contributing aspects and any notable indicators we found.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signals we analyze -->
+    <section class="section" aria-label="Signals we analyze">
+      <div class="h2">Signals we analyze</div>
+      <div class="signal-grid">
+        <div class="signal"><b>Metadata indicators</b><p>EXIF presence, camera/codec traces, JPEG Q-tables, and missing/edited fields.</p></div>
+        <div class="signal"><b>OCR AI terms</b><p>Keyword hits and phrasing patterns often associated with model output.</p></div>
+        <div class="signal"><b>Edge/texture cues</b><p>Edge density, Laplacian variance, blockiness—flat or overly smooth regions can be suspicious.</p></div>
+        <div class="signal"><b>ELA and compression</b><p>Error level analysis and low-ELA regions that may indicate synthetic composition.</p></div>
+        <div class="signal"><b>Color/brightness stats</b><p>Distribution and uniqueness checks (e.g., chroma/luma ratios, brightness/saturation moments).</p></div>
+        <div class="signal"><b>Text repetition/TTR</b><p>Repetition, token variety, and sentence length distribution for text-based content.</p></div>
+      </div>
+    </section>
+
+    <!-- Notes & limitations -->
+    <section class="section" aria-label="Notes and limitations">
+      <div class="two-col">
+        <div class="card-plain">
+          <div class="h2" style="margin-top:0">What to expect</div>
+          <p style="color:#374151;font-size:13px;line-height:1.6;margin:8px 0 0;">The confidence score reflects the strength of observed signals, not a definitive ground truth. Some benign workflows (like exports or aggressive compression) can look AI-like, while sophisticated generations may evade detection. Always combine results with human judgment and source context.</p>
+        </div>
+        <div class="card-plain">
+          <div class="h2" style="margin-top:0">Privacy & local history</div>
+          <p style="color:#374151;font-size:13px;line-height:1.6;margin:8px 0 0;">Your last 15 uploads are stored only in your browser for convenience (see Uploads). For production deployments, set storage/retention policies to match your organization’s requirements.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- For developers -->
+    <section class="section" aria-label="Developers">
+      <div class="h2">For developers</div>
+      <div class="cta-row">
+        <a class="cta primary" href="/api.html">Use the HTTP API</a>
+        <a class="cta" href="/docs.html">Read the docs</a>
+        <a class="cta" href="/plugins.html">Integrations & Plugins</a>
+      </div>
+    </section>
+
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function renderRecent(){
+        try{
+          const el = document.getElementById('recent-grid'); if(!el) return;
+          const raw = localStorage.getItem('pg_uploads');
+          const arr = Array.isArray(JSON.parse(raw||'null')) ? JSON.parse(raw||'[]') : [];
+          if(!arr.length){ el.innerHTML = '<div class="recent-empty">No uploads yet. Your next analysis will show here.</div>'; return; }
+          const take = arr.slice(0,4);
+          el.innerHTML = take.map(entry => {
+            const verdict = (entry.result && entry.result.verdict) || 'unknown';
+            const details = (entry.result && entry.result.details) || {};
+            const score = (typeof details.final_score==='number') ? details.final_score : (entry.result && entry.result.score) || 0;
+            const pct = Math.max(0, Math.min(100, Math.round(score*100)));
+            const badgeClass = verdict === 'authentic' ? 'recent-badge badge-green' : 'recent-badge badge-amber';
+            const thumb = (()=>{
+              if(entry.kind==='image' && entry.thumbUrl) return `<div class="recent-thumb"><img src="${entry.thumbUrl}" alt="thumb"/></div>`;
+              if(entry.kind==='pdf') return '<div class="recent-thumb">📄</div>';
+              return '<div class="recent-thumb">📝</div>';
+            })();
+            return `<div class="recent-card" title="${entry.fileName}">
+              ${thumb}
+              <div class="recent-name">${entry.fileName}</div>
+              <div style="display:flex;flex-direction:column;align-items:end;gap:4px;">
+                <span class="${badgeClass}">${verdict}</span>
+                <span style="font-size:12px;color:#374151;font-weight:800">${pct}%</span>
+              </div>
+            </div>`;
+          }).join('');
+        }catch(e){ /* ignore */ }
+      })();
+    </script>
   </body>
 </html>

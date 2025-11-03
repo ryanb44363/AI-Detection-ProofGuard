@@ -266,18 +266,24 @@ export default function UploadForm() {
       </div>`
       : "";
 
-    const breakdownRows = (scoreBreakdown && Object.keys(scoreBreakdown).length)
-      ? Object.entries(scoreBreakdown).map(([k,v]) => {
-          const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-          const pct = (v * 100).toFixed(0);
-          return `<div>${label}</div><strong>${pct}%</strong>`;
-        }).join("")
-      : `
-            <div>Base score</div><strong>45%</strong>
-            <div>Metadata indicators</div><strong>${(metaHits.length ? 35 : 0).toFixed(0)}%</strong>
-            <div>OCR AI terms</div><strong>${(ocrHits.length ? 25 : 0).toFixed(0)}%</strong>
-            <div>Low-entropy bump</div><strong>${typeof entropy === "number" && entropy < 5.5 ? 5 : 0}%</strong>
-        `;
+    const breakdownRows = (() => {
+      const pretty = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      if (scoreBreakdown && Object.keys(scoreBreakdown).length) {
+        const entries = Object.entries(scoreBreakdown);
+        const sum = entries.reduce((acc, [, v]) => acc + (typeof v === 'number' ? v : 0), 0);
+        const rows = entries
+          .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+          .map(([k, v]) => `<div>${pretty(k)}</div><strong>${Math.round((v || 0) * 100)}%</strong>`) 
+          .join("");
+        const residual = (typeof finalScore === 'number' ? finalScore : 0) - sum;
+        const residualPct = Math.round(Math.max(0, residual) * 100);
+        const residualRow = residualPct > 0 ? `<div>Additional signals</div><strong>${residualPct}%</strong>` : '';
+        return rows + residualRow;
+      }
+      // No breakdown available: show a single overall row so numbers remain coherent
+      const overall = typeof finalScore === 'number' ? Math.round(finalScore * 100) : scorePct;
+      return `<div>Overall</div><strong>${overall}%</strong>`;
+    })();
 
     const aspectsHTML = (() => {
       const sb = (scoreBreakdown || {}) as Record<string, number>;
@@ -365,7 +371,6 @@ export default function UploadForm() {
           <hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb" />
           <div>
             <div style="font-weight:700;margin-bottom:8px;">Aspects and contributions</div>
-            <div class="muted" style="font-size:12px;margin-bottom:6px">TEST: aspects section rendered</div>
             ${aspectsHTML}
           </div>
           <p class="muted" style="margin-top:10px">This is a heuristic breakdown; not definitive proof.</p>
@@ -840,7 +845,7 @@ export default function UploadForm() {
 
   // No cleanup needed for data URLs
 
-  // Minimal mount: invisible input + full-card drop target and compact status
+  // Minimal mount: full-card drop target with a prominent, clickable drop box and compact status
   return (
     <div
       {...getRootProps({
@@ -851,7 +856,7 @@ export default function UploadForm() {
         inset: 0,
         borderRadius: 24,
         border: isDragActive ? '2px dashed #60a5fa' : '2px dashed transparent',
-        background: isDragActive ? 'rgba(59,130,246,.08)' : 'transparent',
+        background: isDragActive ? 'rgba(59,130,246,.06)' : 'transparent',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -860,6 +865,35 @@ export default function UploadForm() {
       aria-label="Drop files to analyze"
     >
       <input {...getInputProps()} style={{ display: 'none' }} />
+      {!loading && (
+        <div style={{
+          width: 'min(520px, 92%)',
+          minHeight: 150,
+          borderRadius: 16,
+          border: `2px dashed ${isDragActive ? '#3b82f6' : '#d1d5db'}`,
+          background: isDragActive
+            ? 'linear-gradient(180deg, rgba(59,130,246,.06), rgba(99,102,241,.06))'
+            : 'linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.98))',
+          boxShadow: isDragActive
+            ? '0 18px 34px rgba(59,130,246,.18)'
+            : '0 12px 24px rgba(15,61,130,.10)',
+          display: 'grid',
+          placeItems: 'center',
+          textAlign: 'center',
+          padding: '18px 16px',
+          userSelect: 'none'
+        }} role="button" aria-label="Upload or drop file">
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={isDragActive ? '#2563eb' : '#4f46e5'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <div style={{ fontWeight:800, fontSize:16, color:'#0f172a' }}>Upload or Drop File</div>
+            <div style={{ fontSize:13, color:'#6b7280' }}>Supports images, PDFs, and plain text</div>
+          </div>
+        </div>
+      )}
       {loading && (
         <div style={{
           position: 'absolute',

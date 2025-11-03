@@ -180,18 +180,24 @@ interface Payload {
     const aspectRatio = typeof d.aspect_ratio === 'number' ? d.aspect_ratio : undefined;
     const megapixels = typeof d.megapixels === 'number' ? d.megapixels : undefined;
     const scoreBreakdown: Record<string, number> | undefined = d.score_breakdown;
-    const breakdownRows = (scoreBreakdown && Object.keys(scoreBreakdown).length)
-      ? Object.entries(scoreBreakdown).map(([k, v]) => {
-          const label = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-          const pctLine = Math.round((v || 0) * 100);
-          return `<div>${label}</div><strong>${pctLine}%</strong>`;
-        }).join('')
-      : `
-          <div>Base score</div><strong>45%</strong>
-          <div>Metadata indicators</div><strong>${metaHits.length ? 35 : 0}%</strong>
-          <div>OCR AI terms</div><strong>${ocrHits.length ? 25 : 0}%</strong>
-          <div>Low-entropy bump</div><strong>${typeof entropy === 'number' && entropy < 5.5 ? 5 : 0}%</strong>
-        `;
+    const breakdownRows = (() => {
+      const pretty = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      if (scoreBreakdown && Object.keys(scoreBreakdown).length) {
+        const entries = Object.entries(scoreBreakdown);
+        const sum = entries.reduce((acc, [, v]) => acc + (typeof v === 'number' ? v : 0), 0);
+        const rows = entries
+          .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+          .map(([k, v]) => `<div>${pretty(k)}</div><strong>${Math.round((v || 0) * 100)}%</strong>`)
+          .join('');
+        const final = (result as any).details?.final_score ?? result.score ?? 0;
+        const residual = final - sum;
+        const residualPct = Math.round(Math.max(0, residual) * 100);
+        const residualRow = residualPct > 0 ? `<div>Additional signals</div><strong>${residualPct}%</strong>` : '';
+        return rows + residualRow;
+      }
+      const final = (result as any).details?.final_score ?? result.score ?? 0;
+      return `<div>Overall</div><strong>${Math.round(final * 100)}%</strong>`;
+    })();
 
     const aspectsHTML = (() => {
       const sb = scoreBreakdown || {} as Record<string, number>;
