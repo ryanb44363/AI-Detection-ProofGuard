@@ -27,6 +27,19 @@
       .btn-ghost:hover{background:#f0f4f7}
       .center { text-align:center; padding: 60px 20px; }
       .muted { color: var(--muted); }
+      /* Global footer */
+      .site-footer{background:#fff;border-top:1px solid #edf0f2;margin-top:24px}
+      .foot-wrap{max-width:1100px;margin:0 auto;padding:20px}
+      .foot-brand{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+      .foot-brand .logo-img{width:28px;height:28px}
+      .fb-name{font-weight:800;font-size:16px}
+      .fb-tag{font-size:12px;color:#6b7280}
+      .foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+      .foot-title{font-size:12px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+      .foot-link{display:block;color:#3a424a;font-size:13px;margin:4px 0;text-decoration:none}
+      .foot-link:hover{color:#111827;text-decoration:underline}
+      .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
+      @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
     </style>
   </head>
   <body>
@@ -54,5 +67,41 @@
         <p class="muted">We’re working on detailed endpoints, SDKs, and examples. Check back shortly.</p>
       </div>
     </main>
+    <footer class="site-footer">
+      <div class="foot-wrap">
+        <div class="foot-brand">
+          <img src="/favicon.svg?v=2" alt="ProofGuard" class="logo-img"/>
+          <div>
+            <div class="fb-name">ProofGuard</div>
+            <div class="fb-tag">Detect AI content — fast and free.</div>
+          </div>
+        </div>
+        <div class="foot-grid">
+          <div>
+            <div class="foot-title">Product</div>
+            <a class="foot-link" href="/">Home</a>
+            <a class="foot-link" href="/uploads.html">Uploads</a>
+            <a class="foot-link" href="/pricing.html">Pricing</a>
+          </div>
+          <div>
+            <div class="foot-title">Developers</div>
+            <a class="foot-link" href="/api.html">API</a>
+            <a class="foot-link" href="/plugins.html">Plugins</a>
+            <a class="foot-link" href="/docs.html">Docs</a>
+          </div>
+          <div>
+            <div class="foot-title">Company</div>
+            <a class="foot-link" href="/docs.html#privacy">Privacy</a>
+            <a class="foot-link" href="/docs.html#terms">Terms</a>
+            <a class="foot-link" href="/signup.html">Sign up</a>
+          </div>
+        </div>
+        <div class="foot-bar">
+          <div>© <span id="yr-api"></span> ProofGuard</div>
+          <div>Made for reliable AI-content checks</div>
+        </div>
+      </div>
+    </footer>
+    <script>document.getElementById('yr-api').textContent = String(new Date().getFullYear());</script>
   </body>
 </html>
