@@ -1,9 +1,9 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import Header from "../components/Header";
 import { AlertCircle, CheckCircle, File, FileText, Image as ImageIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { AnalyzerDetails } from "../api";
-import Header from "../components/Header";
 
 interface AnalysisResult {
   score: number;

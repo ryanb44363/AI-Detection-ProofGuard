@@ -35,6 +35,12 @@ export default defineConfig([
     languageOptions: {
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
+    ## Branding assets
+
+    - A single asset `public/favicon.svg` is used for both the browser favicon and the in-app logo (header and static pages).
+    - Avoid adding separate logo files; reference `/favicon.svg` everywhere to keep branding consistent.
+
+    ````
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...

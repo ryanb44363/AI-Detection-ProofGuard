@@ -35,29 +35,7 @@ export default function UploadForm() {
 
     const file = acceptedFiles[0];
 
-    // Open a blank tab immediately to avoid popup blockers; show a loading animation
-    const holdingTab = window.open("", "_blank");
-    if (holdingTab && holdingTab.document) {
-      try {
-        holdingTab.document.title = "Analyzing… | ProofGuard";
-        holdingTab.document.body.style.margin = "0";
-        holdingTab.document.body.style.fontFamily = "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-        holdingTab.document.body.innerHTML = `
-          <style>
-            @keyframes spin { to { transform: rotate(360deg); } }
-          </style>
-          <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#fafafa;color:#374151;">
-            <div style="text-align:center;">
-              <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:10px;">ProofGuard</div>
-              <div style="display:inline-flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.06)">
-                <div style="width:18px;height:18px;border:3px solid #dbeafe;border-top-color:#2563eb;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-                <span style="font-size:14px;color:#374151;">Analyzing your file…</span>
-              </div>
-            </div>
-          </div>`;
-        holdingTab.document.close();
-      } catch { /* ignore */ }
-    }
+    // Same-tab behavior: no pre-opened tab; we'll navigate to the generated result page when ready
 
     // Determine type for preview generation (image/pdf/text supported)
     const ext = file.name.split(".").pop()?.toLowerCase();
@@ -112,23 +90,9 @@ export default function UploadForm() {
         },
         window.location.origin
       );
-      if (holdingTab && holdingTab.document) {
-        try {
-          holdingTab.document.open();
-          holdingTab.document.write(html);
-          holdingTab.document.close();
-        } catch {
-          const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-          try {
-            holdingTab.location.href = blobUrl;
-          } catch {
-            window.open(blobUrl, "_blank");
-          }
-        }
-      } else {
-        const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-        if (!window.open(blobUrl, "_blank")) window.location.href = blobUrl;
-      }
+      const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+      // Open the same generated page, but in the same tab
+      window.location.href = blobUrl;
     } catch (err: unknown) {
       type ApiErr = { response?: { data?: { detail?: string } }; message?: string };
       const e = err as ApiErr;
@@ -150,15 +114,7 @@ export default function UploadForm() {
           window.location.origin
         );
         const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-        if (holdingTab) {
-          try {
-            holdingTab.location.replace(blobUrl);
-          } catch {
-            window.open(blobUrl, "_blank");
-          }
-        } else if (!window.open(blobUrl, "_blank")) {
-          window.location.href = blobUrl;
-        }
+        window.location.href = blobUrl;
       } catch {
         // If even fallback fails, show error page
         const html = buildResultHtml(
@@ -171,23 +127,8 @@ export default function UploadForm() {
           },
           window.location.origin
         );
-        if (holdingTab && holdingTab.document) {
-          try {
-            holdingTab.document.open();
-            holdingTab.document.write(html);
-            holdingTab.document.close();
-          } catch {
-            const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-            try {
-              holdingTab.location.href = blobUrl;
-            } catch {
-              window.open(blobUrl, "_blank");
-            }
-          }
-        } else {
-          const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-          if (!window.open(blobUrl, "_blank")) window.location.href = blobUrl;
-        }
+        const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+        window.location.href = blobUrl;
       }
     } finally {
       setLoading(false);
@@ -572,15 +513,17 @@ export default function UploadForm() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  <base href="${origin}/" />
+  <link rel="icon" type="image/svg+xml" href="${origin}/favicon.svg?v=2" />
         <title>ProofGuard – Result</title>
         <style>
           :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
           * { box-sizing:border-box; }
           body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+          /* Header (unified with uploads/index) */
           .app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}
           .brand{display:flex;align-items:center;gap:10px}
-          .logo{width:34px;height:34px;border-radius:8px;display:block}
+          .logo-img{width:34px;height:34px;border-radius:8px;display:block}
           .brand-name{font-size:20px;font-weight:700;color:#111827;text-decoration:none}
           .muted-2{color:#7f8790}
           .nav{display:flex;gap:18px;color:#3a424a}
@@ -626,19 +569,19 @@ export default function UploadForm() {
         </script>
         <header class="app-header">
           <div class="brand">
-            <img src="/favicon.svg?v=2" alt="ProofGuard logo" class="logo" />
-            <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
+            <img src="${origin}/favicon.svg?v=2" alt="ProofGuard logo" class="logo-img" />
+            <a href="${origin}/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
           </div>
           <nav class="nav">
-            <a href="/uploads.html" class="nav-link">Uploads</a>
-            <a href="/api.html" class="nav-link">API</a>
-            <a href="/plugins.html" class="nav-link">Plugins</a>
-            <a href="/pricing.html" class="nav-link">Pricing</a>
-            <a href="/docs.html" class="nav-link">Docs</a>
+            <a href="${origin}/uploads.html" class="nav-link">Uploads</a>
+            <a href="${origin}/api.html" class="nav-link">API</a>
+            <a href="${origin}/plugins.html" class="nav-link">Plugins</a>
+            <a href="${origin}/pricing.html" class="nav-link">Pricing</a>
+            <a href="${origin}/docs.html" class="nav-link">Docs</a>
           </nav>
           <div class="actions-inline">
-            <a href="/signup.html" class="btn-link">Log in</a>
-            <a href="/signup.html" class="btn-ghost">Sign up</a>
+            <a href="${origin}/signup.html" class="btn-link">Log in</a>
+            <a href="${origin}/signup.html" class="btn-ghost">Sign up</a>
           </div>
         </header>
 
