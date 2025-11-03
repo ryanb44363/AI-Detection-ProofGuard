@@ -631,14 +631,14 @@ export default function UploadForm() {
           </div>
           <nav class="nav">
             <a href="/uploads.html" class="nav-link">Uploads</a>
-            <a href="/api.html" class="nav-link">API</a>
-            <a href="/plugins.html" class="nav-link">Plugins</a>
-            <a href="/pricing.html" class="nav-link">Pricing</a>
-            <a href="/docs.html" class="nav-link">Docs</a>
+            <a href="#" class="nav-link">Bulk Editing</a>
+            <a href="#" class="nav-link">API</a>
+            <a href="#" class="nav-link">Plugins</a>
+            <a href="#" class="nav-link">Pricing</a>
           </nav>
           <div class="actions-inline">
-            <a href="/signup.html" class="btn-link">Log in</a>
-            <a href="/signup.html" class="btn-ghost">Sign up</a>
+            <a href="#" class="btn-link">Log in</a>
+            <a href="#" class="btn-ghost">Sign up</a>
           </div>
         </header>
 
@@ -658,93 +658,7 @@ export default function UploadForm() {
               </div>
             </div>
           </div>
-          ${(() => {
-            // Enhanced model results section
-            const individualPreds = (details as any).individual_predictions as Record<string, any> | undefined;
-            const modelsUsed = (details as any).models_used as string[] | undefined;
-            const voteSummary = (details as any).vote_summary as {total_models?: number; synthetic_votes?: number; authentic_votes?: number} | undefined;
-            
-            if (!error && individualPreds && Object.keys(individualPreds).length > 0) {
-              return `
-              <section class="card" style="margin-top:16px;">
-                <h2 style="font-size:18px;font-weight:800;margin:0 0 10px 0;">🤖 AI Detection Models</h2>
-                <div style="font-size:14px;color:#374151">
-                  ${voteSummary ? `
-                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;">
-                    <div style="font-weight:600;margin-bottom:4px;">Consensus Analysis</div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:13px;">
-                      <div>📊 <strong>${voteSummary.total_models || 0}</strong> models</div>
-                      <div>🔴 <strong>${voteSummary.synthetic_votes || 0}</strong> synthetic</div>
-                      <div>🟢 <strong>${voteSummary.authentic_votes || 0}</strong> authentic</div>
-                    </div>
-                  </div>` : ""}
-                  
-                  <div style="display:grid;gap:12px;">
-                    ${Object.entries(individualPreds).map(([modelName, pred]: [string, any]) => {
-                      const verdict = pred.verdict || "unknown";
-                      const score = typeof pred.score === "number" ? pred.score : 0.5;
-                      const confidence = typeof pred.confidence === "number" ? pred.confidence : 0;
-                      const scorePct = Math.round(score * 100);
-                      const confPct = Math.round(confidence * 100);
-                      
-                      const modelIcon = (() => {
-                        if (modelName.includes("DetectGPT")) return "🔍";
-                        if (modelName.includes("RoBERTa") || modelName.includes("BERT")) return "🧠";
-                        if (modelName.includes("GLTR")) return "📊";
-                        if (modelName.includes("Stylometry")) return "✍️";
-                        if (modelName.includes("LLM") || modelName.includes("Ensemble")) return "🎯";
-                        if (modelName.includes("DetectLLM")) return "🔎";
-                        if (modelName.includes("EST") || modelName.includes("Entropy")) return "📈";
-                        if (modelName.includes("EfficientNet")) return "🖼️";
-                        if (modelName.includes("CLIP")) return "👀";
-                        if (modelName.includes("NoisePrint") || modelName.includes("PRNU")) return "🔊";
-                        if (modelName.includes("JPEG")) return "📷";
-                        if (modelName.includes("C2PA")) return "🛡️";
-                        if (modelName.includes("DRF") || modelName.includes("Deepfake")) return "🎭";
-                        if (modelName.includes("Spectral") || modelName.includes("GAN")) return "🌈";
-                        if (modelName.includes("Metadata")) return "📋";
-                        return "🔬";
-                      })();
-                      
-                      const statusColor = verdict === "synthetic" ? "#f59e0b" : verdict === "authentic" ? "#10b981" : "#6b7280";
-                      const bgColor = verdict === "synthetic" ? "#fffbeb" : verdict === "authentic" ? "#ecfdf5" : "#f9fafb";
-                      const borderColor = verdict === "synthetic" ? "#fcd34d" : verdict === "authentic" ? "#a7f3d0" : "#e5e7eb";
-                      
-                      return `
-                      <div style="border:1px solid ${borderColor};border-radius:8px;padding:12px;background:${bgColor};">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                          <div style="font-weight:600;display:flex;align-items:center;gap:6px;">
-                            ${modelIcon} ${modelName}
-                          </div>
-                          <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
-                            <span style="color:${statusColor};font-weight:600;text-transform:uppercase;">${verdict}</span>
-                            <span style="color:#6b7280;">${scorePct}%</span>
-                          </div>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                          <div style="flex:1;background:#e5e7eb;border-radius:4px;height:6px;overflow:hidden;">
-                            <div style="background:${statusColor};height:100%;width:${scorePct}%;transition:width 0.3s;"></div>
-                          </div>
-                          <span style="font-size:11px;color:#6b7280;min-width:35px;">Conf: ${confPct}%</span>
-                        </div>
-                        ${pred.reason && pred.reason !== modelName ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;">${pred.reason.substring(0, 120)}${pred.reason.length > 120 ? "..." : ""}</div>` : ""}
-                      </div>
-                      `;
-                    }).join("")}
-                  </div>
-                  
-                  <div style="margin-top:16px;padding:10px;background:#f1f5f9;border-radius:6px;">
-                    <div style="font-size:12px;color:#64748b;display:flex;align-items:center;gap:6px;">
-                      <span>💡</span>
-                      <span><strong>Enhanced Analysis:</strong> Results from ${modelsUsed?.length || Object.keys(individualPreds).length} specialized AI detection models covering text analysis, image forensics, and pattern recognition.</span>
-                    </div>
-                  </div>
-                </div>
-              </section>`;
-            } else {
-              return breakdownSection;
-            }
-          })()}
+          ${breakdownSection}
           ${detectedTextSection}
         </div>
 

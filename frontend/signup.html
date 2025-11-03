@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ProofGuard – Sign up</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <meta name="description" content="Signup placeholder" />
+    <style>
+      :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
+      * { box-sizing:border-box; }
+      body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+      .container { max-width: 680px; margin: 0 auto; padding: 24px 20px; }
+      .app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}
+      .brand{display:flex;align-items:center;gap:10px}
+      .logo-img{width:34px;height:34px;border-radius:8px;display:block}
+      .brand-name{font-size:20px;font-weight:700;color:#111827;text-decoration:none}
+      .muted-2{color:#7f8790}
+      .nav{display:flex;gap:18px;color:#3a424a}
+      .nav-link{font-size:14px;font-weight:500;color:#3a424a;text-decoration:none}
+      .nav-link:hover{color:#111827}
+      .nav-link.active{color:#111827;text-decoration:underline;text-underline-offset:6px}
+      .actions-inline{display:flex;gap:12px;align-items:center}
+      .btn-link{background:transparent;border:none;font-weight:600;cursor:pointer;color:#2d3a45;text-decoration:none}
+      .btn-link:hover{color:#111827}
+      .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
+      .btn-ghost:hover{background:#f0f4f7}
+      .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow: 0 6px 20px rgba(0,0,0,.04); margin-top: 28px; }
+      .center { text-align:center; padding: 40px 14px; }
+      .muted { color: var(--muted); }
+      .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+      input { padding:10px 12px; border-radius:10px; border:1px solid var(--border); font:inherit; }
+      .btn-primary { display:inline-block; background:#2563eb; color:#fff; border-radius:10px; padding:10px 16px; font-weight:700; text-decoration:none; }
+    </style>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <img src="/favicon.svg?v=2" alt="ProofGuard logo" class="logo-img" />
+        <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
+      </div>
+      <nav class="nav">
+        <a href="/uploads.html" class="nav-link">Uploads</a>
+        <a href="/api.html" class="nav-link">API</a>
+        <a href="/plugins.html" class="nav-link">Plugins</a>
+        <a href="/pricing.html" class="nav-link">Pricing</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+      </nav>
+      <div class="actions-inline">
+        <a href="/signup.html" class="btn-link">Log in</a>
+        <a href="/signup.html" class="btn-ghost">Sign up</a>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="card">
+        <div class="center">
+          <h1 style="margin:0 0 8px 0; font-size:28px;">Create your account</h1>
+          <p class="muted">Signup flow coming soon. For now, this is a placeholder.</p>
+        </div>
+        <div style="max-width:400px; margin: 0 auto;">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" placeholder="you@example.com" type="email" />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" placeholder="••••••••" type="password" />
+          </div>
+          <div style="text-align:center; margin-top:10px;">
+            <a class="btn-primary" href="/">Continue</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
