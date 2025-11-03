@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ProofGuard – Docs</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
-    <meta name="description" content="Documentation placeholder" />
+  <meta name="description" content="ProofGuard documentation and FAQs" />
     <style>
       :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
       * { box-sizing:border-box; }
       body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
-      .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
       .app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}
       .brand{display:flex;align-items:center;gap:10px}
       .logo-img{width:34px;height:34px;border-radius:8px;display:block}
@@ -25,8 +25,16 @@
       .btn-link:hover{color:#111827}
       .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
       .btn-ghost:hover{background:#f0f4f7}
-      .center { text-align:center; padding: 60px 20px; }
+      .center { text-align:center; padding: 30px 20px; }
       .muted { color: var(--muted); }
+      .lead { font-size: 14px; color:#374151; }
+      .faq { margin-top: 10px; }
+      .faq details { background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px 12px; box-shadow: 0 6px 12px rgba(0,0,0,.04); margin:10px 0; }
+      .faq summary { font-weight:800; cursor:pointer; list-style:none; }
+      .faq summary::-webkit-details-marker { display:none; }
+      .faq p, .faq ul { color:#374151; font-size:13px; line-height:1.6; }
+      .faq code { background:#f3f4f6; border:1px solid #e5e7eb; border-radius:6px; padding: 0 4px; }
+      .badge { display:inline-block; padding:2px 8px; font-size:11px; font-weight:800; border-radius:999px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
     </style>
   </head>
   <body>
@@ -49,10 +57,114 @@
     </header>
 
     <main class="container">
-      <div class="center">
-        <h1 style="margin:0 0 8px 0; font-size:28px;">Documentation coming soon</h1>
-        <p class="muted">Guides, tutorials, and references are on the way.</p>
+      <div class="center" style="text-align:left;">
+        <h1 style="margin:0 0 6px 0; font-size:28px;">ProofGuard Docs</h1>
+        <p class="lead">Current working state, how uploads/results behave, and where your data lives. If you’re integrating, see <a href="/api.html" style="color:#2563eb;font-weight:800">API</a>.</p>
       </div>
+
+      <section class="faq" aria-label="Frequently asked questions">
+        <details open>
+          <summary>How do I upload files? What formats and limits apply?</summary>
+          <div>
+            <p>
+              Use the large drop zone on the homepage. Click anywhere inside it or drag a file. Supported categories:
+            </p>
+            <ul>
+              <li>Images: PNG, JPG/JPEG, WebP, GIF, BMP, SVG</li>
+              <li>PDFs: Single or multi-page</li>
+              <li>Text-like: TXT, MD, CSV/TSV, JSON, HTML/CSS/JS/TS, and many common code files</li>
+            </ul>
+            <p>Maximum size: 10 MB. Some file types are blocked for safety (ZIP, EXE, DMG).</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>What happens after I upload? Same-tab navigation</summary>
+          <div>
+            <p>
+              We analyze the file and then open a standalone results page in the <b>same tab</b>. The page is generated as a secure in-memory document (Blob URL) and includes the standard site header and navigation.
+            </p>
+            <ul>
+              <li>The results page uses absolute links and a base URL so the header works correctly even on Blob pages.</li>
+              <li>If the backend is unreachable, the app performs a lightweight <i>offline</i> analysis to provide a best-effort result.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>How are results computed? What do the “breakdown” and “aspects” mean?</summary>
+          <div>
+            <p>
+              The confidence score is built from multiple signals (metadata, text cues, and image forensics). The results page shows:
+            </p>
+            <ul>
+              <li><b>Aspects and contributions</b>: Zero‑value rows are hidden. If no aspect contributes, we show “No contributing aspects detected.”</li>
+              <li><b>Rating breakdown</b>: Contributions are sorted by impact and always sum to the final score via an <i>Additional signals</i> residual row. If a breakdown isn’t provided, we show a single <i>Overall</i> row equal to the final score.</li>
+              <li>For images, we may consider edge density, Laplacian variance, ELA, color uniqueness, and EXIF presence. For text, we check repetition/TTR and keyword hits.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>Where is my data stored? Can I clear history?</summary>
+          <div>
+            <p>
+              Uploads are analyzed by the backend API when available. For convenience, your last <b>15 uploads</b> (filename, small preview/thumbnail, and analysis result) are saved <span class="badge">in your browser only</span> under <code>localStorage.pg_uploads</code>.
+            </p>
+            <ul>
+              <li>Visit the <a href="/uploads.html" style="color:#2563eb;font-weight:800">Uploads</a> page to browse or clear local history.</li>
+              <li>“View” opens a same-tab standalone result built from the stored payload.</li>
+              <li>Organizations can adapt retention policies by disabling local history and controlling backend storage.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>What are the limitations and best practices?</summary>
+          <div>
+            <ul>
+              <li>The score is an estimate, not ground truth. Some benign transformations (exports, heavy compression) may look “AI-like.”</li>
+              <li>Very sophisticated generations may evade detection; combine automated results with human judgment.</li>
+              <li>Large or encrypted PDFs, rare file types, or unusual encodings might not preview inline.</li>
+              <li>Thumbnails are generated client-side for images to speed up history browsing.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>What’s on the Uploads page?</summary>
+          <div>
+            <ul>
+              <li>Shows your most recent 15 uploads (newest first) with verdict and final score.</li>
+              <li>“View” recreates the standalone results page from local data—no server round-trip needed.</li>
+              <li>Aspects in the inline viewer hide zero rows and include the same rating breakdown behavior as the main results page.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>How do I integrate with ProofGuard?</summary>
+          <div>
+            <p>Use our HTTP API to submit files programmatically from your app or pipeline.</p>
+            <ul>
+              <li>See <a href="/api.html" style="color:#2563eb;font-weight:800">API</a> for endpoints and examples.</li>
+              <li>The front-end is built with Vite + React + TypeScript. Results pages are generated as standalone HTML for reliable sharing and navigation.</li>
+            </ul>
+          </div>
+        </details>
+
+        <details>
+          <summary>Troubleshooting</summary>
+          <div>
+            <ul>
+              <li>Upload fails immediately: Ensure the file is under 10 MB and not a blocked type (ZIP/EXE/DMG).</li>
+              <li>No preview: Some formats don’t preview in-browser; the analysis still runs.</li>
+              <li>No results page: Browser blocked Blob navigation—try again, or check if the backend is reachable. The app will fall back to offline analysis if needed.</li>
+              <li>Clear stale state: On Uploads page, click <i>Clear</i> to remove local history. You can also remove <code>localStorage.pg_uploads</code> manually.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
     </main>
   </body>
 </html>
