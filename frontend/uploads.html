@@ -119,7 +119,47 @@
             if (payload.isImage) return `<div class='preview-box'><img src='${p}'/></div><div class='filename'>🖼️ <span>${fn}</span></div>`;
             return `<div class='preview-box' style='display:flex;align-items:center;justify-content:center'><div class='muted'>No preview available</div></div><div class='filename'>📎 <span>${fn}</span></div>`;
           })()}</div>
-          <div class="card"><div class="gauge-wrap"><div class="center"><svg viewBox="0 0 200 120" style="width:100%"><path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="#e5e7eb" stroke-width="16" pathLength="100"/><path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="${color}" stroke-linecap="round" stroke-width="16" pathLength="100" stroke-dasharray="${scorePct} 100"/></svg><div style="margin-top:-16px"><div style="font-size:32px;font-weight:800;color:${color}">${scorePct}%</div><div class="muted">Confidence</div></div></div></div><div class="title-row"><div class="title">${verdict==='authentic'?'Authentic Content':'Potentially AI-Generated'}</div></div><p style="color:#374151;font-size:14px;line-height:1.5">${escapeHtml(reason)}</p><div class="actions"><a class="btn" href="${origin}/" onclick="window.close();return true;">Back</a><a class="btn btn-primary" href="${origin}/">Analyze Another File</a></div></div></div></div></body></html>`;
+          <div class="card"><div class="gauge-wrap"><div class="center"><svg viewBox="0 0 200 120" style="width:100%"><path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="#e5e7eb" stroke-width="16" pathLength="100"/><path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="${color}" stroke-linecap="round" stroke-width="16" pathLength="100" stroke-dasharray="${scorePct} 100"/></svg><div style="margin-top:-16px"><div style="font-size:32px;font-weight:800;color:${color}">${scorePct}%</div><div class="muted">Confidence</div></div></div></div><div class="title-row"><div class="title">${verdict==='authentic'?'Authentic Content':'Potentially AI-Generated'}</div></div><p style="color:#374151;font-size:14px;line-height:1.5">${escapeHtml(reason)}</p><div class="actions"><a class="btn" href="${origin}/" onclick="window.close();return true;">Back</a><a class="btn btn-primary" href="${origin}/">Analyze Another File</a></div>
+          <hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb" />
+          <div>
+            <div style="font-weight:700;margin-bottom:8px;">Aspects and contributions</div>
+            ${(() => {
+              const sb = (payload.result && payload.result.details && payload.result.details.score_breakdown) || {};
+              const isImg = payload.isImage;
+              const isPdf = payload.isPdf;
+              const aspectsBase = [{key:'base',label:'Base score',weight:0.45}];
+              const aspectsImg = [
+                {key:'metadata_hits',label:'Metadata indicators',weight:0.35},
+                {key:'ocr_hits',label:'OCR AI terms',weight:0.25},
+                {key:'low_entropy',label:'Low entropy',weight:0.05},
+                {key:'low_edge_density',label:'Low edge density',weight:0.04},
+                {key:'low_ela_mean',label:'Low ELA mean',weight:0.03},
+                {key:'low_color_uniqueness',label:'Low color uniqueness',weight:0.04},
+                {key:'missing_exif',label:'Missing EXIF',weight:0.04},
+                {key:'low_laplacian',label:'Low Laplacian variance',weight:0.02},
+                {key:'flat_blocks',label:'Flat-block ratio',weight:0.03},
+                {key:'very_smooth_low_blockiness',label:'Very smooth, low blockiness',weight:0.01},
+              ];
+              const aspectsText = [
+                {key:'ocr_hits',label:'Keyword/AI term hits',weight:0.25},
+                {key:'high_repetition_low_ttr',label:'High repetition, low TTR',weight:0.06},
+                {key:'avg_sentence_len_mid',label:'Average sentence length (mid)',weight:0.01},
+                {key:'keyword_hits',label:'Keyword hits',weight:0.25},
+              ];
+              const pick = isImg ? aspectsImg : (isPdf ? aspectsText : aspectsText);
+              const aspects = aspectsBase.concat(pick);
+              return aspects.map(a => {
+                const val = typeof sb[a.key] === 'number' ? sb[a.key] : 0;
+                const pct = Math.round(val*100);
+                const max = Math.round(a.weight*100);
+                return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;">
+                  <div style="font-size:13px;color:#374151">${a.label}</div>
+                  <div style="font-weight:700">${pct}% <span class="muted" style="font-weight:500">/ ${max}%</span></div>
+                </div>`;
+              }).join('');
+            })()}
+          </div>
+          </div></div></div></body></html>`;
         } catch(e){ return '<!doctype html><title>Error</title><p>Could not render result.</p>'; }
       }
 
