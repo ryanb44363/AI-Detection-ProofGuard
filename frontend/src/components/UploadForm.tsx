@@ -38,11 +38,13 @@ export default function UploadForm() {
     // Same-tab behavior: no pre-opened tab; we'll navigate to the generated result page when ready
 
     // Determine type for preview generation (image/pdf/text supported)
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    const isImage = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg"].includes(ext || "");
-    const isPdf = ext === "pdf";
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  const isImage = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "avif", "tif", "tiff", "ico", "heic", "heif"].includes(ext || "");
+  const isPdf = ext === "pdf";
+  const isAudio = ["mp3", "wav", "ogg", "m4a", "aac", "flac"].includes(ext || "") || (file.type || "").startsWith("audio/");
+  const isVideo = ["mp4", "webm", "ogv", "mov", "avi", "mkv", "m4v"].includes(ext || "") || (file.type || "").startsWith("video/");
     const textLikeExts = [
-      "txt", "md", "markdown", "csv", "tsv", "json", "log", "html", "css", "js", "jsx", "ts", "tsx", "py", "java", "c", "cpp", "h", "hpp", "cs", "rb", "go", "rs", "php", "sh", "yml", "yaml", "xml", "ini", "conf", "cfg", "toml",
+      "txt", "md", "markdown", "rtf", "csv", "tsv", "json", "log", "html", "css", "js", "jsx", "ts", "tsx", "py", "java", "c", "cpp", "h", "hpp", "cs", "rb", "go", "rs", "php", "sh", "yml", "yaml", "xml", "ini", "conf", "cfg", "toml",
     ];
     const isTextLike = textLikeExts.includes(ext || "") || (file.type || "").startsWith("text/");
 
@@ -52,7 +54,7 @@ export default function UploadForm() {
 
     // Prepare preview data URL for images, PDFs, or text (so new tab can render without blob revocation)
     let previewDataUrl: string | null = null;
-    if (isImage || isPdf || isTextLike) {
+    if (isImage || isPdf || isTextLike || isAudio || isVideo) {
       try {
         if (isTextLike) {
           const text = await new Promise<string>((resolve, reject) => {
@@ -86,6 +88,10 @@ export default function UploadForm() {
           previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
           isImage,
           isPdf,
+          isAudio,
+          isVideo,
+          fileSize: file.size,
+          fileExt: ext || "",
           result: res,
         },
         window.location.origin
@@ -109,6 +115,10 @@ export default function UploadForm() {
             previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
             isImage,
             isPdf,
+            isAudio,
+            isVideo,
+            fileSize: file.size,
+            fileExt: ext || "",
             result: localRes,
           },
           window.location.origin
@@ -123,6 +133,10 @@ export default function UploadForm() {
             previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
             isImage,
             isPdf,
+            isAudio,
+            isVideo,
+            fileSize: file.size,
+            fileExt: ext || "",
             error: msg,
           },
           window.location.origin
@@ -198,12 +212,23 @@ export default function UploadForm() {
       previewUrl: string | null;
       isImage: boolean;
       isPdf?: boolean;
+      isAudio?: boolean;
+      isVideo?: boolean;
+      fileSize?: number;
+      fileExt?: string;
       result?: ApiAnalysisResult;
       error?: string;
     },
     origin: string
   ) {
-    const { fileName, previewUrl, isImage, isPdf, result, error } = payload;
+    const { fileName, previewUrl, isImage, isPdf, isAudio = false, isVideo = false, fileSize, fileExt, result, error } = payload;
+    const humanFileSize = (n?: number) => {
+      if (typeof n !== 'number' || !isFinite(n)) return '';
+      const units = ['B','KB','MB','GB','TB'];
+      const i = n === 0 ? 0 : Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+      return `${(n / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${units[i]}`;
+    };
+    const sizeLabel = humanFileSize(fileSize);
     const verdict = result?.verdict;
     const details = (result?.details ?? {}) as AnalyzerDetails;
     const finalScore = typeof (details as any).final_score === 'number' ? (details as any).final_score as number : (result?.score || 0);
@@ -398,7 +423,11 @@ export default function UploadForm() {
       if (!previewUrl) {
         return `
           <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
-            <div class="muted">No preview available</div>
+            <div class="muted" style="text-align:center">
+              <div style="font-size:24px;margin-bottom:6px">📎</div>
+              <div>No preview available</div>
+              <div style="font-size:12px;margin-top:4px">${fileExt ? '.'+String(fileExt).toUpperCase() : ''}${sizeLabel ? ' • '+sizeLabel : ''}</div>
+            </div>
           </div>`;
       }
       if (isPdf) {
@@ -413,15 +442,32 @@ export default function UploadForm() {
             <iframe src="${previewUrl}" title="${fileName}"></iframe>
           </div>`;
       }
+      if (isVideo) {
+        return `
+          <div class="preview-video">
+            <video controls src="${previewUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>
+          </div>`;
+      }
+      if (isAudio) {
+        return `
+          <div class="preview-audio" style="border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;">
+            <audio controls src="${previewUrl}" style="width:100%"></audio>
+          </div>`;
+      }
       if (isImage) {
         return `
           <div class="preview-box">
-            <img src="${previewUrl}" alt="${fileName}" />
+            <img src="${previewUrl}" alt="${fileName}" onerror="this.style.display='none';var f=document.getElementById('img-fb'); if(f){ f.style.display='flex'; }" />
+            <div id="img-fb" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;color:#6b7280;font-size:14px;">Image preview not supported${fileExt ? ' for .'+String(fileExt).toUpperCase() : ''}</div>
           </div>`;
       }
       return `
         <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
-          <div class="muted">No preview available</div>
+          <div class="muted" style="text-align:center">
+            <div style="font-size:24px;margin-bottom:6px">📎</div>
+            <div>No preview available</div>
+            <div style="font-size:12px;margin-top:4px">${fileExt ? '.'+String(fileExt).toUpperCase() : ''}${sizeLabel ? ' • '+sizeLabel : ''}</div>
+          </div>
         </div>`;
     })();
 
@@ -587,6 +633,8 @@ export default function UploadForm() {
           .preview-box img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
           .preview-pdf { position:relative; width:100%; height:520px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; }
           .preview-text { position:relative; width:100%; height:520px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#fff; }
+          .preview-video { position:relative; width:100%; height:520px; border-radius:12px; overflow:hidden; border:1px solid var(--border); background:#000; }
+          .preview-audio { width:100%; }
           .preview-pdf iframe, .preview-pdf embed, .preview-pdf object { position:absolute; inset:0; width:100%; height:100%; border:0; }
           .preview-text iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
           .filename { margin-top:10px; font-size:14px; color:#374151; word-break: break-all; display:flex; gap:8px; align-items:center; }
@@ -601,6 +649,19 @@ export default function UploadForm() {
           .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; justify-content:center }
           .title { font-size:22px; font-weight:800; }
           .muted { color:#6b7280; font-size: 12px; }
+          /* Global footer (match static pages) */
+          .site-footer{background:#fff;border-top:1px solid #edf0f2;margin-top:24px}
+          .foot-wrap{max-width:1100px;margin:0 auto;padding:20px}
+          .foot-brand{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+          .foot-brand .logo-img{width:28px;height:28px}
+          .fb-name{font-weight:800;font-size:16px}
+          .fb-tag{font-size:12px;color:#6b7280}
+          .foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+          .foot-title{font-size:12px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+          .foot-link{display:block;color:#3a424a;font-size:13px;margin:4px 0;text-decoration:none}
+          .foot-link:hover{color:#111827;text-decoration:underline}
+          .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
+          @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
         </style>
       </head>
       <body>
@@ -634,7 +695,7 @@ export default function UploadForm() {
           <div class="grid">
             <div class="card">
               ${previewSection}
-              <div class="filename">${isImage ? "🖼️" : "📎"} <span>${fileName}</span></div>
+              <div class="filename">${(() => { try { return isImage ? "🖼️" : (isPdf ? "📄" : (isVideo ? "🎬" : (isAudio ? "🎵" : ((previewUrl||'').startsWith('data:text') ? "📝" : "📎")))); } catch(e){ return "📎"; } })()} <span>${fileName}${sizeLabel ? (' • ' + sizeLabel) : ''}</span></div>
             </div>
             <div class="card">
               ${gauge}
@@ -736,18 +797,43 @@ export default function UploadForm() {
           ${detectedTextSection}
         </div>
 
-        <footer style="border-top:1px solid #e5e7eb; background:#fff; margin-top:16px;">
-          <div class="container" style="padding-top:16px;padding-bottom:12px;">
-            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;">
-              <span class="muted">© 2025 ProofGuard • Detect AI-generated content with confidence</span>
-              <nav class="nav">
-                <a href="#" class="nav-link">Privacy Policy</a>
-                <a href="#" class="nav-link">Terms of Service</a>
-                <a href="#" class="nav-link">Contact</a>
-              </nav>
+        <footer class="site-footer">
+          <div class="foot-wrap">
+            <div class="foot-brand">
+              <img src="${origin}/favicon.svg?v=2" alt="ProofGuard" class="logo-img"/>
+              <div>
+                <div class="fb-name">ProofGuard</div>
+                <div class="fb-tag">Detect AI content — fast and free.</div>
+              </div>
+            </div>
+            <div class="foot-grid">
+              <div>
+                <div class="foot-title">Product</div>
+                <a class="foot-link" href="${origin}/">Home</a>
+                <a class="foot-link" href="${origin}/uploads.html">Uploads</a>
+                <a class="foot-link" href="${origin}/pricing.html">Pricing</a>
+              </div>
+              <div>
+                <div class="foot-title">Developers</div>
+                <a class="foot-link" href="${origin}/api.html">API</a>
+                <a class="foot-link" href="${origin}/plugins.html">Plugins</a>
+                <a class="foot-link" href="${origin}/docs.html">Docs</a>
+              </div>
+              <div>
+                <div class="foot-title">Company</div>
+                <a class="foot-link" href="${origin}/docs.html#privacy">Privacy</a>
+                <a class="foot-link" href="${origin}/docs.html#terms">Terms</a>
+                <a class="foot-link" href="${origin}/signup.html">Sign up</a>
+              </div>
+            </div>
+            <div class="foot-bar">
+              <div>© <span id="yr"></span> ProofGuard</div>
+              <div>Made for reliable AI-content checks</div>
             </div>
           </div>
         </footer>
+
+        <script>(function(){try{var el=document.getElementById('yr'); if(el){ el.textContent=String(new Date().getFullYear()); }}catch(e){}})();</script>
 
         ${clientExtractScript}
       </body>
