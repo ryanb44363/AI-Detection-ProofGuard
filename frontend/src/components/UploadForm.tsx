@@ -661,6 +661,7 @@ export default function UploadForm() {
             <a href="${origin}/plugins.html" class="nav-link">Plugins</a>
             <a href="${origin}/pricing.html" class="nav-link">Pricing</a>
             <a href="${origin}/docs.html" class="nav-link">Docs</a>
+            <a href="${origin}/blog.html" class="nav-link">Blog</a>
           </nav>
           <div class="actions-inline">
             <a href="${origin}/signup.html" class="btn-link">Log in</a>
@@ -675,6 +676,7 @@ export default function UploadForm() {
             <a href="${origin}/plugins.html">Plugins</a>
             <a href="${origin}/pricing.html">Pricing</a>
             <a href="${origin}/docs.html">Docs</a>
+            <a href="${origin}/blog.html">Blog</a>
             <a href="${origin}/signup.html">Log in</a>
             <a href="${origin}/signup.html">Sign up</a>
           </nav>

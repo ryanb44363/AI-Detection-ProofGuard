@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProofGuard – Pricing</title>
+    <title>ProofGuard – Blog</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
-    <meta name="description" content="Pricing placeholder" />
+    <meta name="description" content="ProofGuard Blog: updates, releases, and articles on AI-content detection." />
     <style>
       :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
       * { box-sizing:border-box; }
@@ -25,15 +25,23 @@
       .btn-link:hover{color:#111827}
       .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
       .btn-ghost:hover{background:#f0f4f7}
-  /* Ensure hidden works across overrides */
-  [hidden]{display:none !important}
-  /* Mobile nav */
-  .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
-  .mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}
-  .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
-  .mobile-menu a:hover{background:#f8fafc;color:#111827}
-      .center { text-align:center; padding: 60px 20px; }
-      .muted { color: var(--muted); }
+      /* Mobile nav */
+      [hidden]{display:none !important}
+      .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
+      .mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}
+      .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
+      .mobile-menu a:hover{background:#f8fafc;color:#111827}
+      @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
+
+      /* Blog layout */
+      .page-title{margin:0 0 8px 0; font-size:28px;}
+      .muted{ color: var(--muted); }
+      .posts{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+      .post{ background:#fff; border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 6px 14px rgba(0,0,0,.04); }
+      .post h2{ margin:0 0 6px 0; font-size:18px; }
+      .post p{ margin:0; color:#374151; font-size:14px; }
+      @media (max-width: 900px){ .posts{ grid-template-columns: 1fr; } }
+
       /* Global footer */
       .site-footer{background:#fff;border-top:1px solid #edf0f2;margin-top:24px}
       .foot-wrap{max-width:1100px;margin:0 auto;padding:20px}
@@ -47,7 +55,6 @@
       .foot-link:hover{color:#111827;text-decoration:underline}
       .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
       @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
-      @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
     </style>
   </head>
   <body>
@@ -61,9 +68,9 @@
         <a href="/uploads.html" class="nav-link">Uploads</a>
         <a href="/api.html" class="nav-link">API</a>
         <a href="/plugins.html" class="nav-link">Plugins</a>
-  <a href="/pricing.html" class="nav-link active">Pricing</a>
-  <a href="/docs.html" class="nav-link">Docs</a>
-  <a href="/blog.html" class="nav-link">Blog</a>
+        <a href="/pricing.html" class="nav-link">Pricing</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/blog.html" class="nav-link active">Blog</a>
       </nav>
       <div class="actions-inline">
         <a href="/signup.html" class="btn-link">Log in</a>
@@ -76,19 +83,29 @@
       <a href="/uploads.html">Uploads</a>
       <a href="/api.html">API</a>
       <a href="/plugins.html">Plugins</a>
-  <a href="/pricing.html">Pricing</a>
-  <a href="/docs.html">Docs</a>
-  <a href="/blog.html">Blog</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/blog.html">Blog</a>
       <a href="/signup.html">Log in</a>
       <a href="/signup.html">Sign up</a>
     </nav>
 
     <main class="container">
-      <div class="center">
-        <h1 style="margin:0 0 8px 0; font-size:28px;">Pricing plans coming soon</h1>
-        <p class="muted">We’ll offer a generous free tier and simple paid plans.</p>
-      </div>
+      <h1 class="page-title">Blog</h1>
+      <p class="muted" style="margin-top:0">Product updates, detection insights, and engineering notes.</p>
+
+      <section class="posts" aria-label="Latest posts">
+        <article class="post">
+          <h2>Welcome to the ProofGuard Blog</h2>
+          <p>We’ll share release notes, detection research highlights, and best practices here. Stay tuned.</p>
+        </article>
+        <article class="post">
+          <h2>Roadmap Preview</h2>
+          <p>Upcoming: richer reports, more formats, and improved mobile support.</p>
+        </article>
+      </section>
     </main>
+
     <footer class="site-footer">
       <div class="foot-wrap">
         <div class="foot-brand">
@@ -118,12 +135,12 @@
           </div>
         </div>
         <div class="foot-bar">
-          <div>© <span id="yr-pr"></span> ProofGuard</div>
+          <div>© <span id="yr-blog"></span> ProofGuard</div>
           <div>Made for reliable AI-content checks</div>
         </div>
       </div>
     </footer>
-    <script>document.getElementById('yr-pr').textContent = String(new Date().getFullYear());</script>
+    <script>document.getElementById('yr-blog').textContent = String(new Date().getFullYear());</script>
     <script src="/site.js" defer></script>
   </body>
-</html>
+  </html>
