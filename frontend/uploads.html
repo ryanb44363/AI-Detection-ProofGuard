@@ -239,6 +239,12 @@
           try { localStorage.setItem('result:' + resId, JSON.stringify(payload)); } catch {}
           var url = new URL(window.location.origin + '/result.html');
           url.searchParams.set('id', resId);
+          // Add compact hash payload for resilience (no large preview)
+          try {
+            var minimal = { fileName: payload.fileName, isImage: payload.isImage, isPdf: payload.isPdf, result: payload.result };
+            var b64 = btoa(JSON.stringify(minimal)).replace(/\+/g,'-').replace(/\//g,'_');
+            url.hash = 'd=' + b64;
+          } catch {}
           window.location.href = url.toString();
         } catch(_) {
           // As a last resort, fall back to home

@@ -287,10 +287,61 @@ interface Payload {
     qs('content').classList.remove('hidden');
   }
 
+  function decodeHashPayload(): Partial<Payload> | null {
+    try {
+      const h = window.location.hash || '';
+      if (!h.startsWith('#')) return null;
+      const params = new URLSearchParams(h.slice(1));
+      const d = params.get('d');
+      if (!d) return null;
+      const json = atob(d.replace(/-/g,'+').replace(/_/g,'/'));
+      const obj = JSON.parse(json);
+      if (obj && typeof obj === 'object') return obj as Partial<Payload>;
+    } catch {}
+    return null;
+  }
+
+  function getFromUploads(tsHint: number | null): Payload | null {
+    try {
+      const raw = localStorage.getItem('pg_uploads');
+      const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
+      if (!Array.isArray(arr) || !arr.length) return null;
+      let best = arr[0];
+      if (typeof tsHint === 'number') {
+        let bestDiff = Math.abs((Number(best?.ts)||0) - tsHint);
+        for (const e of arr) {
+          const diff = Math.abs((Number(e?.ts)||0) - tsHint);
+          if (diff < bestDiff) { best = e; bestDiff = diff; }
+        }
+        // Only accept if reasonably close (within ~2 minutes)
+        if (best && Math.abs((Number(best?.ts)||0) - tsHint) > 120000) return null;
+      }
+      if (!best) return null;
+      return {
+        fileName: best.fileName,
+        previewUrl: best.previewUrl || null,
+        isImage: best.kind === 'image',
+        result: best.result,
+      } as Payload;
+    } catch { return null; }
+  }
+
   function getPayload(): Payload | null {
+    // 1) Primary: exact localStorage entry
     const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
+    if (raw) {
+      try { return JSON.parse(raw); } catch {}
+    }
+    // 2) Hash payload (minimal, no large preview)
+    const hashObj = decodeHashPayload();
+    if (hashObj && (hashObj.result || hashObj.fileName)) {
+      return { ...hashObj } as Payload;
+    }
+    // 3) Fallback to uploads history using timestamp in id
+    const ts = Number(String(id).split('-')[0]) || null;
+    const fromUploads = getFromUploads(ts);
+    if (fromUploads) return fromUploads;
+    return null;
   }
 
   // Initial render

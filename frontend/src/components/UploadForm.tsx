@@ -104,6 +104,12 @@ export default function UploadForm() {
       try { localStorage.setItem(`result:${id}`, JSON.stringify(payload)); } catch {}
       const url = new URL(window.location.origin + '/result.html');
       url.searchParams.set('id', id);
+      // Include a compact hash payload (no large preview) for resilience
+      try {
+        const minimal = { fileName: payload.fileName, isImage: payload.isImage, isPdf: payload.isPdf, result: payload.result, error: payload.error };
+        const b64 = btoa(JSON.stringify(minimal)).replace(/\+/g,'-').replace(/\//g,'_');
+        url.hash = 'd=' + b64;
+      } catch {}
       window.location.href = url.toString();
     };
 
