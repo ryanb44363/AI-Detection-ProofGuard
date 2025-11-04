@@ -49,8 +49,7 @@ interface Payload {
 
 (function main() {
   const id = getQueryParam('id');
-  if (!id) { qs('empty').classList.remove('hidden'); return; }
-  const key = `result:${id}`;
+  const key = id ? `result:${id}` : '';
 
   function render(payload: Payload | null) {
     if (!payload) { qs('empty').classList.remove('hidden'); return; }
@@ -293,23 +292,48 @@ interface Payload {
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  // If no id, try to fallback to the latest upload entry
+  if (!id) {
+    try {
+      const raw = localStorage.getItem('pg_uploads');
+      const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
+      if (arr.length) {
+        // Sort by timestamp (newest first) in case not already
+        arr.sort((a: any, b: any) => (Number(b.ts) || 0) - (Number(a.ts) || 0));
+        const entry = arr[0];
+        const payload: Payload = {
+          fileName: entry.fileName,
+          previewUrl: entry.previewUrl || null,
+          isImage: entry.kind === 'image',
+          result: entry.result,
+        };
+        render(payload);
+        return;
+      }
+    } catch {}
+    qs('empty').classList.remove('hidden');
+    return;
+  }
+
   // Initial render
   render(getPayload());
 
   // Listen for updates from the upload page
   window.addEventListener('storage', (e) => {
-    if (e.key === key) {
+    if (id && e.key === key) {
       render(getPayload());
     }
   });
 
   // Poll as a fallback in case 'storage' event doesn't fire (same-tab open)
-  let lastRaw = localStorage.getItem(key);
-  setInterval(() => {
-    const raw = localStorage.getItem(key);
-    if (raw !== lastRaw) {
-      lastRaw = raw;
-      render(getPayload());
-    }
-  }, 800);
+  if (id) {
+    let lastRaw = localStorage.getItem(key);
+    setInterval(() => {
+      const raw = localStorage.getItem(key);
+      if (raw !== lastRaw) {
+        lastRaw = raw;
+        render(getPayload());
+      }
+    }, 800);
+  }
 })();

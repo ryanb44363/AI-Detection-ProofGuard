@@ -371,12 +371,29 @@
         try { var parsed = JSON.parse(raw || '[]'); arr = Array.isArray(parsed) ? parsed : []; } catch { arr = []; }
         var entry = arr.find(function(x){ return x.id === id });
         if (!entry) return;
-        var html = buildResultHtmlFromEntry(entry);
-        var blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-        // Try to safely revoke the blob URL shortly after navigation to reduce memory pressure
-        // Note: this may be skipped if the page unloads immediately (which is fine)
-        setTimeout(function(){ try{ URL.revokeObjectURL(blobUrl); }catch(_){} }, 10000);
-        window.location.href = blobUrl;
+        // Route to dedicated result page using localStorage payload (no blob URLs)
+        try {
+          var payload = {
+            fileName: entry.fileName,
+            previewUrl: entry.previewUrl || null,
+            isImage: entry.kind === 'image',
+            isPdf: entry.kind === 'pdf',
+            result: entry.result
+          };
+          var rid = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+          try { localStorage.setItem('result:' + rid, JSON.stringify(payload)); } catch (_) {}
+          var url = new URL(window.location.origin + '/result.html');
+          url.searchParams.set('id', rid);
+          window.location.href = url.toString();
+        } catch (_) {
+          // Fallback: use inline blob result if something goes wrong
+          try {
+            var html = buildResultHtmlFromEntry(entry);
+            var blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+            setTimeout(function(){ try{ URL.revokeObjectURL(blobUrl); }catch(_){} }, 10000);
+            window.location.href = blobUrl;
+          } catch (_) {}
+        }
       });
 
       render();
