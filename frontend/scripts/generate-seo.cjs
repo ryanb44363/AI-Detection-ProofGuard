@@ -512,18 +512,22 @@ function buildIndex(manifest) {
 function buildSitemap(manifest) {
   const base = process.env.BASE_URL || 'https://proofguard.io';
   const today = new Date().toISOString().split('T')[0];
-  const core = [
-    '/', '/blog.html', '/seo/index.html'
-  ];
-  const urls = [
-    ...core.map(loc => ({ loc: base + loc, lastmod: today })),
-    ...manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0,10) })),
-  ];
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    ${urls.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('')}
-  </urlset>`;
+  const core = ['/', '/blog.html', '/seo/index.html'];
+  const urls = [];
+  urls.push(...core.map(loc => ({ loc: base + loc, lastmod: today })));
+  urls.push(...manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0, 10) })));
 
+  const lines = [];
+  lines.push('<?xml version="1.0" encoding="UTF-8"?>');
+  lines.push('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+  for (const u of urls) {
+    lines.push('  <url>');
+    lines.push(`    <loc>${u.loc}</loc>`);
+    lines.push(`    <lastmod>${u.lastmod}</lastmod>`);
+    lines.push('  </url>');
+  }
+  lines.push('</urlset>');
+  const xml = lines.join('\n') + '\n';
   writeFile(path.join(SEO_DIR, 'sitemap.xml'), xml);
 }
 

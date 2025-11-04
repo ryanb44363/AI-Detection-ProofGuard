@@ -126,152 +126,7 @@
       function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]||c)); }
       function fmtDate(ts){ try{ const d=new Date(ts); return d.toLocaleString(); }catch{ return ''} }
 
-      // Reuse a simplified version of the result page generator from UploadForm
-      function buildResultHtmlFromEntry(entry){
-        try{
-          const payload = { fileName: entry.fileName, previewUrl: entry.previewUrl, isImage: entry.kind==='image', isPdf: entry.kind==='pdf', result: entry.result };
-          var result = payload.result || {};
-          var verdict = result.verdict;
-          var details = (result.details || {});
-          var finalScore = (typeof details.final_score === 'number') ? details.final_score : (result.score || 0);
-          var scorePct = Math.max(0, Math.min(100, Math.round(finalScore*100)));
-          var color = verdict === 'authentic' ? '#10b981' : '#f59e0b';
-          var reason = result.reason || '';
-          var origin = window.location.origin;
-
-          // Build preview HTML
-          var fn = escapeHtml(payload.fileName);
-          var p = payload.previewUrl;
-          var previewHtml = "";
-          if (!p) {
-            previewHtml = "<div class='preview-box' style='display:flex;align-items:center;justify-content:center'><div class='muted'>No preview available</div></div><div class='filename'>📎 <span>"+fn+"</span></div>";
-          } else if (payload.isPdf) {
-            previewHtml = "<div class='preview-pdf'><iframe src='"+p+"'></iframe></div><div class='filename'>📄 <span>"+fn+"</span></div>";
-          } else if (String(p).startsWith('data:text')) {
-            previewHtml = "<div class='preview-text'><iframe src='"+p+"'></iframe></div><div class='filename'>📝 <span>"+fn+"</span></div>";
-          } else if (payload.isImage) {
-            previewHtml = "<div class='preview-box'><img src='"+p+"'/></div><div class='filename'>🖼️ <span>"+fn+"</span></div>";
-          } else {
-            previewHtml = "<div class='preview-box' style='display:flex;align-items:center;justify-content:center'><div class='muted'>No preview available</div></div><div class='filename'>📎 <span>"+fn+"</span></div>";
-          }
-
-          // Aspects and contributions
-          var sb = (payload.result && payload.result.details && payload.result.details.score_breakdown) || {};
-          var isImg = payload.isImage;
-          var isPdf = payload.isPdf;
-          var aspectsBase = [{key:'base',label:'Base score',weight:0.45}];
-          var aspectsImg = [
-            {key:'metadata_hits',label:'Metadata indicators',weight:0.35},
-            {key:'ocr_hits',label:'OCR AI terms',weight:0.25},
-            {key:'low_entropy',label:'Low entropy',weight:0.05},
-            {key:'low_edge_density',label:'Low edge density',weight:0.04},
-            {key:'low_ela_mean',label:'Low ELA mean',weight:0.03},
-            {key:'low_color_uniqueness',label:'Low color uniqueness',weight:0.04},
-            {key:'missing_exif',label:'Missing EXIF',weight:0.04},
-            {key:'low_laplacian',label:'Low Laplacian variance',weight:0.02},
-            {key:'flat_blocks',label:'Flat-block ratio',weight:0.03},
-            {key:'very_smooth_low_blockiness',label:'Very smooth, low blockiness',weight:0.01},
-          ];
-          var aspectsText = [
-            {key:'ocr_hits',label:'Keyword/AI term hits',weight:0.25},
-            {key:'high_repetition_low_ttr',label:'High repetition, low TTR',weight:0.06},
-            {key:'avg_sentence_len_mid',label:'Average sentence length (mid)',weight:0.01},
-            {key:'keyword_hits',label:'Keyword hits',weight:0.25},
-          ];
-          var pick = isImg ? aspectsImg : (isPdf ? aspectsText : aspectsText);
-          var aspects = aspectsBase.concat(pick);
-          var aspectsRows = aspects.map(function(a){
-            var val = typeof sb[a.key] === 'number' ? sb[a.key] : 0;
-            var pct = Math.round(val*100);
-            if (pct === 0) return '';
-            var max = Math.round((a.weight||0)*100);
-            return "<div style=\"display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;\">"
-              + "<div style=\"font-size:13px;color:#374151\">"+a.label+"</div>"
-              + "<div style=\"font-weight:700\">"+pct+"% <span class=\"muted\" style=\"font-weight:500\">/ "+max+"%</span></div>"
-              + "</div>";
-          }).filter(Boolean);
-          var aspectsHtml = aspectsRows.length ? aspectsRows.join('') : "<div class=\"muted\" style=\"font-size:13px\">No contributing aspects detected</div>";
-
-          // Rating breakdown
-          var detailsLocal = (payload.result && payload.result.details) || {};
-          var sbLocal = detailsLocal.score_breakdown || {};
-          var entries = Object.keys(sbLocal).filter(function(k){ return typeof sbLocal[k] === 'number'; }).map(function(k){ return { key:k, val: sbLocal[k] };}).filter(function(x){ return x.val > 0; });
-          var ratingHtml;
-          if (!entries.length) {
-            ratingHtml = "<div style=\"display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;\">"
-              + "<div style=\"font-size:13px;color:#374151\">Overall</div>"
-              + "<div style=\"font-weight:700\">"+scorePct+"%</div>"
-              + "</div>";
-          } else {
-            var labelMap = {
-              base:'Base score', metadata_hits:'Metadata indicators', ocr_hits:'OCR AI terms', low_entropy:'Low entropy', low_edge_density:'Low edge density',
-              low_ela_mean:'Low ELA mean', low_color_uniqueness:'Low color uniqueness', missing_exif:'Missing EXIF', low_laplacian:'Low Laplacian variance',
-              flat_blocks:'Flat-block ratio', very_smooth_low_blockiness:'Very smooth, low blockiness', high_repetition_low_ttr:'High repetition, low TTR',
-              avg_sentence_len_mid:'Average sentence length (mid)', keyword_hits:'Keyword hits'
-            };
-            entries.sort(function(a,b){ return b.val - a.val; });
-            var rows = entries.map(function(e){
-              var pct = Math.round(e.val * 100);
-              return "<div style=\"display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;\">"
-                + "<div style=\"font-size:13px;color:#374151\">"+(labelMap[e.key] || e.key)+"</div>"
-                + "<div style=\"font-weight:700\">"+pct+"%</div>"
-                + "</div>";
-            });
-            var sum = entries.reduce(function(acc, e){ return acc + (e.val || 0); }, 0);
-            var residual = finalScore - sum;
-            if (residual > 0.005) {
-              rows.push("<div style=\"display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;margin:6px 0;\">"
-                + "<div style=\"font-size:13px;color:#374151\">Additional signals</div>"
-                + "<div style=\"font-weight:700\">"+Math.round(residual*100)+"%</div>"
-                + "</div>");
-            }
-            ratingHtml = rows.join('');
-          }
-
-          // Compose page
-          var headCss = ':root{--bg:#f9fafb;--card:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--blue:#2563eb}.container{max-width:1100px;margin:0 auto;padding:32px 20px 16px 20px}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}.grid{display:grid;grid-template-columns:1fr;gap:24px}@media (min-width:900px){.grid{grid-template-columns:1fr 1fr}}.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 6px 20px rgba(0,0,0,.04)}.preview-box{position:relative;width:100%;padding-top:100%;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:linear-gradient(135deg,#eef2ff,#f5f3ff);display:block}.preview-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.preview-pdf{position:relative;width:100%;height:520px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#fff}.preview-text{position:relative;width:100%;height:520px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#fff}.preview-pdf iframe,.preview-text iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.filename{margin-top:10px;font-size:14px;color:#374151;word-break:break-all;display:flex;gap:8px;align-items:center}.gauge-wrap{width:100%;max-width:420px;margin:0 auto 12px auto}.center{text-align:center}.title-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;justify-content:center}.title{font-size:22px;font-weight:800}.muted{color:#6b7280;font-size:12px}[hidden]{display:none !important}/* Header (unified) */.app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}.brand{display:flex;align-items:center;gap:10px}.logo-img{width:34px;height:34px;border-radius:8px;display:block}.brand-name{font-size:20px;font-weight:700;color:#111827;text-decoration:none}.muted-2{color:#7f8790}.nav{display:flex;gap:18px;color:#3a424a}.nav-link{font-size:14px;font-weight:500;color:#3a424a;text-decoration:none}.nav-link:hover{color:#111827}.actions-inline{display:flex;gap:12px;align-items:center}.btn-link{background:transparent;border:none;font-weight:600;cursor:pointer;color:#2d3a45;text-decoration:none}.btn-link:hover{color:#111827}.btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}.btn-ghost:hover{background:#f0f4f7}/* Mobile nav */.mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}.mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}.mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}.mobile-menu a:hover{background:#f8fafc;color:#111827}.actions{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{padding:10px 14px;border-radius:12px;font-weight:600;border:1px solid var(--border);background:#fff;cursor:pointer;text-decoration:none;text-align:center}.btn-primary{background:linear-gradient(90deg,var(--blue),#4f46e5);color:#fff;border:none}@media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }';
-
-          var html = ''
-            + '<!doctype html>'
-            + '<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>'
-            + '<base href="'+origin+'/" />'
-            + '<link rel="icon" type="image/svg+xml" href="'+origin+'/favicon.svg?v=2" /><title>ProofGuard – Result</title>'
-            + '<style>'+headCss+'</style>'
-            + '</head><body>'
-            + '<header class="app-header"><div class="brand"><img src="'+origin+'/favicon.svg?v=2" alt="ProofGuard logo" class="logo-img"/>'
-            + '<a href="'+origin+'/" class="brand-name">Proof<span class="muted-2">Guard</span></a></div>'
-            + '<nav class="nav"><a href="'+origin+'/" class="nav-link">Home</a><a href="'+origin+'/uploads.html" class="nav-link">Uploads</a>'
-            + '<a href="'+origin+'/api.html" class="nav-link">API</a><a href="'+origin+'/plugins.html" class="nav-link">Plugins</a>'
-            + '<a href="'+origin+'/pricing.html" class="nav-link">Pricing</a><a href="'+origin+'/docs.html" class="nav-link">Docs</a>'
-            + '<a href="'+origin+'/blog.html" class="nav-link">Blog</a></nav>'
-            + '<div class="actions-inline"><a href="'+origin+'/signup.html" class="btn-link">Log in</a><a href="'+origin+'/signup.html" class="btn-ghost">Sign up</a></div>'
-            + '<button id="mobile-menu-button" class="mobile-toggle" aria-controls="mobile-menu" aria-expanded="false">Menu</button></header>'
-            + '<nav id="mobile-menu" class="mobile-menu" hidden><a href="'+origin+'/">Home</a><a href="'+origin+'/uploads.html">Uploads</a><a href="'+origin+'/api.html">API</a><a href="'+origin+'/plugins.html">Plugins</a><a href="'+origin+'/pricing.html">Pricing</a><a href="'+origin+'/docs.html">Docs</a><a href="'+origin+'/blog.html">Blog</a><a href="'+origin+'/signup.html">Log in</a><a href="'+origin+'/signup.html">Sign up</a></nav>'
-            + '<div class="container"><div class="grid">'
-              + '<div class="card">'+ previewHtml +'</div>'
-              + '<div class="card">'
-                + '<div class="gauge-wrap"><div class="center">'
-                  + '<svg viewBox="0 0 200 120" style="width:100%">'
-                    + '<path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="#e5e7eb" stroke-width="16" pathLength="100"/>'
-                    + '<path d="M10 110 A90 90 0 0 1 190 110" fill="none" stroke="'+color+'" stroke-linecap="round" stroke-width="16" pathLength="100" stroke-dasharray="'+scorePct+' 100"/>'
-                  + '</svg>'
-                  + '<div style="margin-top:-16px"><div style="font-size:32px;font-weight:800;color:'+color+'">'+scorePct+'%</div><div class="muted">Confidence</div></div>'
-                + '</div></div>'
-                + '<div class="title-row"><div class="title">'+(verdict==='authentic'?'Authentic Content':'Potentially AI-Generated')+'</div></div>'
-                + '<p style="color:#374151;font-size:14px;line-height:1.5">'+escapeHtml(reason)+'</p>'
-                + '<div class="actions"><a class="btn" href="'+origin+'/" onclick="window.close();return true;">Back</a><a class="btn btn-primary" href="'+origin+'/">Analyze Another File</a></div>'
-                + '<hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb" />'
-                + '<div><div style="font-weight:700;margin-bottom:8px;">Aspects and contributions</div>' + aspectsHtml + '</div>'
-                + '<hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb" />'
-                + '<div><div style="font-weight:700;margin-bottom:8px;">Rating breakdown</div>' + ratingHtml + '</div>'
-              + '</div>'
-            + '</div></div>'
-            + '<scr'+'ipt src="'+origin+'/site.js" defer></scr'+'ipt>'
-            + '</body></html>';
-
-          return html;
-        } catch(e){ return '<!doctype html><title>Error</title><p>Could not render result.</p>'; }
-      }
+      // When clicking an upload entry, navigate to the unified result page using localStorage payload
 
       function render(){
         const rows = document.getElementById('rows');
@@ -371,12 +226,24 @@
         try { var parsed = JSON.parse(raw || '[]'); arr = Array.isArray(parsed) ? parsed : []; } catch { arr = []; }
         var entry = arr.find(function(x){ return x.id === id });
         if (!entry) return;
-        var html = buildResultHtmlFromEntry(entry);
-        var blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-        // Try to safely revoke the blob URL shortly after navigation to reduce memory pressure
-        // Note: this may be skipped if the page unloads immediately (which is fine)
-        setTimeout(function(){ try{ URL.revokeObjectURL(blobUrl); }catch(_){} }, 10000);
-        window.location.href = blobUrl;
+        // Construct payload and navigate to result page via query id
+        try {
+          var payload = {
+            fileName: entry.fileName,
+            previewUrl: entry.previewUrl || null,
+            isImage: entry.kind === 'image',
+            isPdf: entry.kind === 'pdf',
+            result: entry.result || null
+          };
+          var resId = String(Date.now()) + '-' + Math.random().toString(36).slice(2,8);
+          try { localStorage.setItem('result:' + resId, JSON.stringify(payload)); } catch {}
+          var url = new URL(window.location.origin + '/result.html');
+          url.searchParams.set('id', resId);
+          window.location.href = url.toString();
+        } catch(_) {
+          // As a last resort, fall back to home
+          window.location.href = '/';
+        }
       });
 
       render();
