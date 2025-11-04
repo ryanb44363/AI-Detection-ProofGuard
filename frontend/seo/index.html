@@ -54,6 +54,20 @@ body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
 .foot-link:hover{color:#111827;text-decoration:underline}
 .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
 @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
+/* Article */
+.article{max-width:860px;margin:0 auto}
+.article .toc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin:12px 0}
+.article h1{font-size:32px;margin:0 0 8px 0}
+.article h2{font-size:22px;margin:18px 0 8px 0}
+.article h3{font-size:18px;margin:14px 0 6px 0}
+.article p{line-height:1.7;color:#374151;margin:10px 0}
+.article ul, .article ol{padding-left:20px;color:#374151}
+.article li{margin:6px 0}
+.article code{background:#f3f4f6;padding:2px 6px;border-radius:6px}
+.article pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:12px;overflow:auto}
+.article img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--border)}
+.meta{display:flex;gap:10px;color:#6b7280;font-size:13px;margin-bottom:12px}
+@media (max-width:720px){.article h1{font-size:26px}.article{padding:0 2px}}
 </style>
   </head>
   <body>

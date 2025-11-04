@@ -92,18 +92,41 @@
 
     <main class="container">
       <h1 class="page-title">Blog</h1>
-      <p class="muted" style="margin-top:0">Product updates, detection insights, and engineering notes.</p>
+      <p class="muted" style="margin-top:0">Browse our long-form guides and updates. Use search to filter. Items per page: 20.</p>
 
-      <section class="posts" aria-label="Latest posts">
-        <article class="post">
-          <h2>Welcome to the ProofGuard Blog</h2>
-          <p>We’ll share release notes, detection research highlights, and best practices here. Stay tuned.</p>
-        </article>
-        <article class="post">
-          <h2>Roadmap Preview</h2>
-          <p>Upcoming: richer reports, more formats, and improved mobile support.</p>
-        </article>
-      </section>
+      <div style="margin:12px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+        <input id="search" type="search" placeholder="Search guides…" aria-label="Search blog posts" style="flex:1; min-width:220px; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px" />
+        <select id="category" aria-label="Filter by category" style="padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px">
+          <option value="">All categories</option>
+          <option>Detect AI in Images</option>
+          <option>Detect AI in PDFs</option>
+          <option>Detect AI in Text</option>
+          <option>Metadata Analysis</option>
+          <option>OCR Keyword Checks</option>
+          <option>Image Forensics</option>
+          <option>ELA Analysis</option>
+          <option>Edge Density Signals</option>
+          <option>Laplacian Sharpness</option>
+          <option>Color Uniqueness</option>
+          <option>Academic Integrity</option>
+          <option>Journalism Workflows</option>
+          <option>Legal Evidence</option>
+          <option>Education Guidance</option>
+          <option>Enterprise Controls</option>
+          <option>Content Moderation</option>
+          <option>Social Media Images</option>
+          <option>Marketing Assets</option>
+          <option>E-commerce Photos</option>
+          <option>Newsroom Photos</option>
+        </select>
+      </div>
+
+      <section id="results" class="posts" aria-live="polite" aria-label="Search results"></section>
+      <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin:14px 0">
+        <button id="prev" disabled style="padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff">Prev</button>
+        <div id="page-info" class="muted">Page 1 of 1</div>
+        <button id="next" disabled style="padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff">Next</button>
+      </div>
     </main>
 
     <footer class="site-footer">
@@ -141,6 +164,58 @@
       </div>
     </footer>
     <script>document.getElementById('yr-blog').textContent = String(new Date().getFullYear());</script>
+    <script>
+      // Mobile menu
+      (function(){
+        const btn = document.getElementById('mobile-menu-button');
+        const menu = document.getElementById('mobile-menu');
+        if(btn && menu){ btn.addEventListener('click',()=>{ const v=menu.hasAttribute('hidden'); if(v) menu.removeAttribute('hidden'); else menu.setAttribute('hidden',''); }); }
+      })();
+      // Blog listing logic
+      const RESULTS = document.getElementById('results');
+      const SEARCH = document.getElementById('search');
+      const CAT = document.getElementById('category');
+      const PREV = document.getElementById('prev');
+      const NEXT = document.getElementById('next');
+      const PAGE_INFO = document.getElementById('page-info');
+
+      let items = [];
+      let filtered = [];
+      let page = 1;
+      const perPage = 20;
+
+      function render(){
+        const start = (page-1)*perPage;
+        const slice = filtered.slice(start, start+perPage);
+        RESULTS.innerHTML = slice.map(x=>`<article class=\"post\"><h2><a href=\"${x.url}\">${x.title}</a></h2><p class=\"muted\">${x.category} • ${x.format} • ${x.wordCount} words</p><p>${x.excerpt}</p></article>`).join('');
+        const totalPages = Math.max(1, Math.ceil(filtered.length/perPage));
+        PAGE_INFO.textContent = `Page ${Math.min(page,totalPages)} of ${totalPages}`;
+        PREV.disabled = page<=1;
+        NEXT.disabled = page>=totalPages;
+      }
+
+      function applyFilter(){
+        const q = (SEARCH.value||'').toLowerCase();
+        const c = CAT.value||'';
+        filtered = items.filter(it=>{
+          const inCat = !c || it.category===c;
+          const inText = !q || it.title.toLowerCase().includes(q) || (it.excerpt||'').toLowerCase().includes(q);
+          return inCat && inText;
+        });
+        page = 1;
+        render();
+      }
+
+      PREV.addEventListener('click', ()=>{ if(page>1){ page--; render(); window.scrollTo({top:0,behavior:'smooth'});} });
+      NEXT.addEventListener('click', ()=>{ const totalPages=Math.ceil(filtered.length/perPage)||1; if(page<totalPages){ page++; render(); window.scrollTo({top:0,behavior:'smooth'});} });
+      SEARCH.addEventListener('input', applyFilter);
+      CAT.addEventListener('change', applyFilter);
+
+      fetch('/seo/manifest.json', {cache:'no-store'})
+        .then(r=>r.json())
+        .then(data=>{ items = data.items||[]; filtered = items.slice(); render(); })
+        .catch(()=>{ RESULTS.innerHTML = '<p class="muted">Unable to load posts right now.</p>'; });
+    </script>
     <script src="/site.js" defer></script>
   </body>
   </html>

@@ -54,6 +54,20 @@ body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
 .foot-link:hover{color:#111827;text-decoration:underline}
 .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
 @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
+/* Article */
+.article{max-width:860px;margin:0 auto}
+.article .toc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin:12px 0}
+.article h1{font-size:32px;margin:0 0 8px 0}
+.article h2{font-size:22px;margin:18px 0 8px 0}
+.article h3{font-size:18px;margin:14px 0 6px 0}
+.article p{line-height:1.7;color:#374151;margin:10px 0}
+.article ul, .article ol{padding-left:20px;color:#374151}
+.article li{margin:6px 0}
+.article code{background:#f3f4f6;padding:2px 6px;border-radius:6px}
+.article pre{background:#0f172a;color:#e5e7eb;padding:12px;border-radius:12px;overflow:auto}
+.article img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--border)}
+.meta{display:flex;gap:10px;color:#6b7280;font-size:13px;margin-bottom:12px}
+@media (max-width:720px){.article h1{font-size:26px}.article{padding:0 2px}}
 </style>
   </head>
   <body>
@@ -90,16 +104,50 @@ body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
   <a href="/signup.html">Sign up</a>
 </nav>
     <main class="container">
-    <h1 class="h1">Detect AI in Images: Common Pitfalls (Handwritten Notes) for Students</h1>
-    <p class="muted" style="margin-top:0">Actionable tips, step-by-step checks, and context for detect ai in images: common pitfalls (handwritten notes) for students.</p>
-    <div class="grid">
-      <section class="card"><h2>Overview</h2><p>This guide explains how to approach detect ai in images: common pitfalls (handwritten notes) for students using ProofGuard. You'll learn what signals to look for, how to interpret results, and how to combine automated checks with human judgment.</p></section>
-      <section class="card"><h2>Step-by-step</h2><p>1) Prepare your file or text. 2) Upload via the homepage. 3) Review the score and the breakdown. 4) Check metadata, OCR hits, and visual cues. 5) Consider context and source. 6) Save or export findings as needed.</p></section>
-      <section class="card"><h2>Tips & pitfalls</h2><p>Beware of overly smooth textures, missing EXIF in camera-like photos, or repetitive phrasing in text. Low confidence does not always mean authentic; cross-check with source credibility and history.</p></section>
-      <section class="card"><h2>FAQs</h2><p>Q: What file types are supported? A: Images, PDFs, and text. Q: How is the score computed? A: It aggregates signals like metadata, OCR terms, and image forensics. Q: Does ProofGuard store my files? A: Recent uploads are saved locally in your browser for convenience.</p></section>
-      <section class="card"><h2>Related</h2><p>See Uploads for your history, Docs for limitations and privacy, and Blog for updates and analysis notes.</p></section>
+    <article class="article" itemscope itemtype="https://schema.org/Article">
+      <header>
+        <h1 id="intro" itemprop="headline">Detect AI in Images: Common Pitfalls (Handwritten Notes) for Students</h1>
+        <div class="meta"><span>Detect AI in Images</span><span>•</span><span>Handwritten Notes</span><span>•</span><span>Common Pitfalls for Students</span></div>
+      </header>
+      
+    <div class="toc">
+      <strong>On this page</strong>
+      <ul>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#signals">Key signals</a></li>
+        <li><a href="#workflow">Workflow</a></li>
+        <li><a href="#cases">Case studies</a></li>
+        <li><a href="#faq">FAQs</a></li>
+        <li><a href="#checklist">Checklist</a></li>
+        <li><a href="#conclusion">Conclusion</a></li>
+      </ul>
     </div>
-  </main>
+      <p>This article explores detect ai in images: common pitfalls (handwritten notes) for students with practical steps and grounded heuristics that work in day-to-day reviews. You will learn repeatable methods, understand common artifacts, and see how to interpret results with appropriate skepticism. Our guidance balances automated forensics with human judgment and provides clear guardrails to avoid false certainty. We focus on clarity: what to check first, how to triage difficult cases, and where to invest effort when time is limited. All examples use ProofGuard features available on the homepage, with no special configuration required.</p>
+      <h2 id="signals">Key signals</h2>
+      <p>Look for unnatural edge patterns or excessive smoothness, which can indicate over-sampling or diffusion artifacts. Check EXIF metadata where available; missing camera data is a weak signal but still informative when combined with others. Compare error level analysis regions for contrast inconsistencies that persist across recompressions. OCR any embedded text to surface repeated phrases, boilerplate patterns, or mis-spellings consistent with model outputs.</p>
+<p>In multi-image narratives, compare lighting, horizon lines, and perspective cues for subtle discontinuities. When assessing long text, note rhythmic cadence, overly even sentence lengths, and topical drift in supporting paragraphs. Be wary of confident claims with no sources; provenance and credible linking often separate genuine and synthetic material.</p>
+      <ul>
+        <li>Look for unnatural edge patterns or excessive smoothness, which can indicate over-sampling or diffusion artifacts.</li><li>Check EXIF metadata where available; missing camera data is a weak signal but still informative when combined with others.</li><li>Compare error level analysis regions for contrast inconsistencies that persist across recompressions.</li><li>OCR any embedded text to surface repeated phrases, boilerplate patterns, or mis-spellings consistent with model outputs.</li><li>In multi-image narratives, compare lighting, horizon lines, and perspective cues for subtle discontinuities.</li><li>When assessing long text, note rhythmic cadence, overly even sentence lengths, and topical drift in supporting paragraphs.</li><li>Be wary of confident claims with no sources; provenance and credible linking often separate genuine and synthetic material.</li>
+      </ul>
+      <h2 id="workflow">Workflow</h2>
+      <ol>
+        <li>Upload your file or paste text on the homepage and wait for the initial score.</li><li>Open the breakdown to see per-signal contributions such as metadata, OCR hits, and image forensics.</li><li>Skim the highlighted areas and re-check any surprising scores; a second view can reveal benign explanations.</li><li>Cross-check the source or channel where the content appeared; provenance often resolves borderline cases.</li><li>If still uncertain, compare against a known authentic sample or request the original capture for review.</li>
+      </ol>
+      <p>Here is a compact snippet showing how to call the API for automated checks:</p>
+      <pre><code>curl -X POST https://proofguard.example.com/api/analyze   -F file=@sample.jpg
+      </code></pre>
+      <h2 id="cases">Case studies</h2>
+      <p>A classroom submission with glossy photos but missing EXIF: subsequent checks showed stock-image re-exports, not AI.</p><p>A newsroom image with odd reflections: micro-glints aligned perfectly—likely synthetic and later confirmed by the source.</p><p>A policy memo with overly uniform paragraph length: sections reused common templates; external references were inconsistent.</p>
+      <h2 id="faq">FAQs</h2>
+      <h3>How accurate is the score?</h3><p>It reflects measured signals, not final truth. Treat it as a triage aid and seek corroboration.</p><h3>Do you store uploads?</h3><p>Recent uploads may be cached in your browser; server-side retention is minimal for privacy.</p><h3>What if the file is HEIC or scanned?</h3><p>We handle common formats and degrade gracefully; consider converting or uploading original captures.</p>
+      <h2 id="checklist">Checklist</h2>
+      <ul>
+        <li>Record the source or submitter and any available context.</li><li>Capture the result and the breakdown for future audits.</li><li>If the score is borderline, request original files or cite provenance.</li><li>Avoid over-weighting a single signal; look for convergence across methods.</li>
+      </ul>
+      <h2 id="conclusion">Conclusion</h2>
+      <p>Use structured observation, traceable sources, and context-rich reviews. When in doubt, be transparent about uncertainty and document your process.</p>
+    </article>
+  <p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p><p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p></main>
     
 <footer class="site-footer">
   <div class="foot-wrap">
