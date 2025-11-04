@@ -14,6 +14,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const SEO_DIR = path.join(ROOT, 'seo');
+const IMAGES_DIR = path.join(SEO_DIR, 'images');
 
 // Expanded taxonomy
 const CATEGORIES = [
@@ -147,7 +148,7 @@ function heroImage(category, slug) {
     <text x='50%' y='50%' font-family='Inter,system-ui,sans-serif' font-size='42' fill='#ffffff' text-anchor='middle' dominant-baseline='middle'>${category.replace(/&/g,'&amp;')}</text>
   </svg>`;
   const placeholder = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  return { imageUrl, imageAlt, placeholder };
+  return { imageUrl, imageAlt, placeholder, svg };
 }
 
 function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount, readingMinutes, breadcrumbs }) {
@@ -156,6 +157,27 @@ function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount,
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif; }
     .wrap { max-width: 860px; margin: 0 auto; padding: 24px; }
+    /* Header + nav (reused from blog.html) */
+    .app-header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-bottom:1px solid #edf0f2;background:#fff;position:sticky;top:0;z-index:20}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo-img{width:34px;height:34px;border-radius:8px;display:block}
+    .brand-name{font-size:20px;font-weight:700;color:#111827;text-decoration:none}
+    .muted-2{color:#7f8790}
+    .nav{display:flex;gap:18px;color:#3a424a}
+    .nav-link{font-size:14px;font-weight:500;color:#3a424a;text-decoration:none}
+    .nav-link:hover{color:#111827}
+    .nav-link.active{color:#111827;text-decoration:underline;text-underline-offset:6px}
+    .actions-inline{display:flex;gap:12px;align-items:center}
+    .btn-link{background:transparent;border:none;font-weight:600;cursor:pointer;color:#2d3a45;text-decoration:none}
+    .btn-link:hover{color:#111827}
+    .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
+    .btn-ghost:hover{background:#f0f4f7}
+    [hidden]{display:none !important}
+    .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
+    .mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}
+    .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
+    .mobile-menu a:hover{background:#f8fafc;color:#111827}
+    @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
     header.breadcrumbs { font-size: 14px; color: var(--muted); margin: 8px 0 16px; }
     header.breadcrumbs a { color: var(--muted); text-decoration: none; }
     header.breadcrumbs a:hover { color: var(--ink); text-decoration: underline; }
@@ -179,6 +201,19 @@ function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount,
     .pill { display:inline-block; border:1px solid var(--border); padding:4px 10px; border-radius:999px; background:#f8fafc; color:#0f172a; margin-right:6px; margin-bottom:6px; }
     .kbd { display:inline-block; padding:2px 6px; border-radius:6px; border:1px solid var(--border); background:#f8fafc; font-family: ui-monospace, monospace; }
     a { color: var(--brand); }
+    /* Footer styles (reused) */
+    .site-footer{background:#fff;border-top:1px solid #edf0f2;margin-top:24px}
+    .foot-wrap{max-width:1100px;margin:0 auto;padding:20px}
+    .foot-brand{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+    .foot-brand .logo-img{width:28px;height:28px}
+    .fb-name{font-weight:800;font-size:16px}
+    .fb-tag{font-size:12px;color:#6b7280}
+    .foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+    .foot-title{font-size:12px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+    .foot-link{display:block;color:#3a424a;font-size:13px;margin:4px 0;text-decoration:none}
+    .foot-link:hover{color:#111827;text-decoration:underline}
+    .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
+    @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
   `;
 
   return `<!doctype html>
@@ -191,9 +226,40 @@ function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount,
     <style>${styles}</style>
   </head>
   <body>
+    <header class="app-header">
+      <div class="brand">
+        <img src="/favicon.svg?v=2" alt="ProofGuard logo" class="logo-img" />
+        <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
+      </div>
+      <nav class="nav">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/uploads.html" class="nav-link">Uploads</a>
+        <a href="/api.html" class="nav-link">API</a>
+        <a href="/plugins.html" class="nav-link">Plugins</a>
+        <a href="/pricing.html" class="nav-link">Pricing</a>
+        <a href="/docs.html" class="nav-link">Docs</a>
+        <a href="/blog.html" class="nav-link active">Blog</a>
+      </nav>
+      <div class="actions-inline">
+        <a href="/signup.html" class="btn-link">Log in</a>
+        <a href="/signup.html" class="btn-ghost">Sign up</a>
+      </div>
+      <button id="mobile-menu-button" class="mobile-toggle" aria-controls="mobile-menu" aria-expanded="false">Menu</button>
+    </header>
+    <nav id="mobile-menu" class="mobile-menu" hidden>
+      <a href="/">Home</a>
+      <a href="/uploads.html">Uploads</a>
+      <a href="/api.html">API</a>
+      <a href="/plugins.html">Plugins</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/signup.html">Log in</a>
+      <a href="/signup.html">Sign up</a>
+    </nav>
     <div class="wrap">
       <header class="breadcrumbs">${breadcrumbs}</header>
-  <div class="hero"><img src="${hero.imageUrl}" alt="${hero.imageAlt}" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${hero.placeholder}'"/></div>
+      <div class="hero"><img src="${hero.imageUrl}" alt="${hero.imageAlt}" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${hero.placeholder}'"/></div>
       <h1>${title}</h1>
       <div class="meta">
         <span class="chip"><span class="dot"></span> ${category}</span>
@@ -204,6 +270,42 @@ function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount,
       ${bodyHtml}
       <div class="footer">This guide is part of the ProofGuard Library. Explore more at <a href="/blog.html">the blog</a> and the <a href="/seo/index.html">SEO library</a>.</div>
     </div>
+    <footer class="site-footer">
+      <div class="foot-wrap">
+        <div class="foot-brand">
+          <img src="/favicon.svg?v=2" alt="ProofGuard" class="logo-img"/>
+          <div>
+            <div class="fb-name">ProofGuard</div>
+            <div class="fb-tag">Detect AI content — fast and free.</div>
+          </div>
+        </div>
+        <div class="foot-grid">
+          <div>
+            <div class="foot-title">Product</div>
+            <a class="foot-link" href="/uploads.html">Uploads</a>
+            <a class="foot-link" href="/pricing.html">Pricing</a>
+          </div>
+          <div>
+            <div class="foot-title">Developers</div>
+            <a class="foot-link" href="/api.html">API</a>
+            <a class="foot-link" href="/plugins.html">Plugins</a>
+            <a class="foot-link" href="/docs.html">Docs</a>
+          </div>
+          <div>
+            <div class="foot-title">Company</div>
+            <a class="foot-link" href="/docs.html#privacy">Privacy</a>
+            <a class="foot-link" href="/docs.html#terms">Terms</a>
+            <a class="foot-link" href="/signup.html">Sign up</a>
+          </div>
+        </div>
+        <div class="foot-bar">
+          <div>© <span id="yr-article"></span> ProofGuard</div>
+          <div>Made for reliable AI-content checks</div>
+        </div>
+      </div>
+    </footer>
+    <script>document.getElementById('yr-article').textContent = String(new Date().getFullYear());</script>
+    <script src="/site.js" defer></script>
   </body>
   </html>`;
 }
@@ -298,6 +400,7 @@ function countWords(html) {
 
 function generateArticles(N = 1000) {
   ensureDir(SEO_DIR);
+  ensureDir(IMAGES_DIR);
   const manifest = [];
   const today = nowISODate();
 
@@ -310,6 +413,14 @@ function generateArticles(N = 1000) {
     const url = `/seo/${slug}.html`;
     const topic = 'AI image detection in production';
     const hero = heroImage(cat, slug);
+    // Write a local server-rendered SVG hero so we don't rely on external hosts
+    const localSvgPath = path.join(IMAGES_DIR, `${slug}.svg`);
+    try {
+      writeFile(localSvgPath, hero.svg);
+    } catch (_) {
+      // If writing fails, we'll still fall back to data URI placeholder
+    }
+    const localHeroUrl = `/seo/images/${slug}.svg`;
   let bodyHtml = buildBody({ topic, category: cat });
     let wordCount = countWords(bodyHtml);
     // ensure >= 1500 words by appending paragraphs as needed
@@ -321,7 +432,8 @@ function generateArticles(N = 1000) {
     }
     const readingMinutes = estimateReadingMinutes(wordCount);
     const breadcrumbs = buildBreadcrumbs(cat, title);
-    const html = buildHtml({ title, category: cat, audience: aud, slug, hero, bodyHtml, wordCount, readingMinutes, breadcrumbs });
+  // Prefer local hero image
+  const html = buildHtml({ title, category: cat, audience: aud, slug, hero: { imageUrl: localHeroUrl, imageAlt: hero.imageAlt, placeholder: hero.placeholder }, bodyHtml, wordCount, readingMinutes, breadcrumbs });
     const filePath = path.join(SEO_DIR, `${slug}.html`);
     writeFile(filePath, html);
 
@@ -335,7 +447,7 @@ function generateArticles(N = 1000) {
       category: cat,
       audience: aud,
       tags,
-      imageUrl: hero.imageUrl,
+  imageUrl: localHeroUrl,
       imageAlt: hero.imageAlt,
       wordCount,
       readingTime: readingMinutes,
