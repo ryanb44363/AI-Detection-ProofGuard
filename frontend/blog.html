@@ -168,11 +168,26 @@
       let page = 1;
       const perPage = 20;
 
+      // Inline fallback image (SVG) to ensure thumbnails always render
+      const FALLBACK_IMG = (()=>{
+        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='630' viewBox='0 0 1200 630'>
+          <defs>
+            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+              <stop offset='0%' stop-color='#0ea5e9'/>
+              <stop offset='100%' stop-color='#1e40af'/>
+            </linearGradient>
+          </defs>
+          <rect width='1200' height='630' fill='url(#g)'/>
+          <text x='50%' y='50%' font-family='Inter,system-ui,sans-serif' font-size='42' fill='#ffffff' text-anchor='middle' dominant-baseline='middle'>ProofGuard</text>
+        </svg>`;
+        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+      })();
+
       function render(){
         const start = (page-1)*perPage;
         const slice = filtered.slice(start, start+perPage);
         RESULTS.innerHTML = slice.map(x=>`<article class=\"card\">`
-          + `<a href=\"${x.url}\"><img class=\"thumb\" src=\"${x.imageUrl || 'https://picsum.photos/seed/'+encodeURIComponent(x.slug||'pg')+'/1200/630'}\" alt=\"${(x.imageAlt||'Hero image').replace(/\"/g,'&quot;')}\" loading=\"lazy\" decoding=\"async\"/></a>`
+          + `<a href=\"${x.url}\"><img class=\"thumb\" src=\"${x.imageUrl || FALLBACK_IMG}\" alt=\"${(x.imageAlt||'Hero image').replace(/\\\"/g,'&quot;')}\" loading=\"lazy\" decoding=\"async\" referrerpolicy=\"no-referrer\" onerror=\"this.onerror=null;this.src='${FALLBACK_IMG}'\"/></a>`
           + `<div class=\"body\">`
           + `<div class=\"meta\"><span class=\"chip\">${x.category||'Library'}</span><span class=\"chip\">${(x.readingTime||Math.max(1,Math.ceil((x.wordCount||1200)/230)))} min</span></div>`
           + `<h2><a href=\"${x.url}\" style=\"color:#111827;text-decoration:none\">${x.title}</a></h2>`

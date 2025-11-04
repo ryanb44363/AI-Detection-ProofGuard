@@ -135,7 +135,19 @@ function heroImage(category, slug) {
   // Unsplash Source hotlink (public stock); size 1200x630; use slug to pseudo-vary via query
   const imageUrl = `https://source.unsplash.com/featured/1200x630/?${encodeURIComponent(query)}`;
   const imageAlt = `${category} — contextual hero image`;
-  return { imageUrl, imageAlt };
+  // Inline SVG placeholder (ensures image is always shown if external fails)
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='630' viewBox='0 0 1200 630'>
+    <defs>
+      <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0%' stop-color='#0ea5e9'/>
+        <stop offset='100%' stop-color='#1e40af'/>
+      </linearGradient>
+    </defs>
+    <rect width='1200' height='630' fill='url(#g)'/>
+    <text x='50%' y='50%' font-family='Inter,system-ui,sans-serif' font-size='42' fill='#ffffff' text-anchor='middle' dominant-baseline='middle'>${category.replace(/&/g,'&amp;')}</text>
+  </svg>`;
+  const placeholder = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  return { imageUrl, imageAlt, placeholder };
 }
 
 function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount, readingMinutes, breadcrumbs }) {
@@ -147,8 +159,8 @@ function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount,
     header.breadcrumbs { font-size: 14px; color: var(--muted); margin: 8px 0 16px; }
     header.breadcrumbs a { color: var(--muted); text-decoration: none; }
     header.breadcrumbs a:hover { color: var(--ink); text-decoration: underline; }
-    .hero { margin: 8px 0 24px; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); }
-    .hero img { display:block; width:100%; height:auto; aspect-ratio: 1200/630; object-fit: cover; }
+  .hero { margin: 8px 0 24px; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); }
+  .hero img { display:block; width:100%; height:auto; aspect-ratio: 1200/630; object-fit: cover; background: #e2e8f0; }
     h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 8px 0 12px; }
     .meta { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
     .meta .chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:#f8fafc; color:#0f172a; }
@@ -181,7 +193,7 @@ function buildHtml({ title, category, audience, slug, hero, bodyHtml, wordCount,
   <body>
     <div class="wrap">
       <header class="breadcrumbs">${breadcrumbs}</header>
-      <div class="hero"><img src="${hero.imageUrl}" alt="${hero.imageAlt}" loading="eager" decoding="async"/></div>
+  <div class="hero"><img src="${hero.imageUrl}" alt="${hero.imageAlt}" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${hero.placeholder}'"/></div>
       <h1>${title}</h1>
       <div class="meta">
         <span class="chip"><span class="dot"></span> ${category}</span>
@@ -210,39 +222,14 @@ function buildBody({ topic, category }) {
   const toc = `
   <div class="toc">
     <strong>On this page</strong>
-    <ol>
-      <li>Key signals</li>
-      <li>Workflow</li>
-      <li>Deep dive</li>
-      <li>Troubleshooting</li>
-      <li>Playbook</li>
-      <li>Evaluation metrics</li>
-      <li>Dataset & bias</li>
-      <li>Risk & governance</li>
-      <li>Case studies</li>
-      <li>FAQs</li>
-      <li>Checklist</li>
-      <li>Conclusion</li>
-    </ol>
+    <div>Key signals — Workflow — Deep dive — Troubleshooting — Playbook — Evaluation metrics — Dataset & bias — Risk & governance — Case studies — FAQs — Checklist — Conclusion</div>
   </div>`;
 
   const signals = `
-    <ul>
-      <li>Multi-signal fusion: combine model outputs with heuristic and EXIF/provenance checks.</li>
-      <li>Thresholds and ROC-aware decisions that reflect your false positive budget.</li>
-      <li>Context-aware policies that differ for ${category.toLowerCase()} vs public UGC.</li>
-      <li>Human-in-the-loop review paths and audit trails for escalations.</li>
-      <li>Continuous monitoring for drift, adversarial inputs, and data shift.</li>
-    </ul>`;
+    <p>Start with multi-signal fusion that blends model outputs with provenance and metadata analysis. Calibrate thresholds with ROC-aware thinking to reflect your false positive budget. Policies should be context-aware—what works for ${category.toLowerCase()} rarely maps one-to-one to public UGC. Preserve human-in-the-loop review with audit trails for escalations, and invest early in monitoring for drift, adversarial inputs, and data shifts.</p>`;
 
   const workflow = `
-    <ol>
-      <li>Ingest assets and normalize formats and color profiles.</li>
-      <li>Extract metadata and text; compute primary detection signals.</li>
-      <li>Apply business rules and provenance/watermark checks.</li>
-      <li>Score, threshold, and route to auto-approve or review queue.</li>
-      <li>Log decisions and ground truth for retraining and audits.</li>
-    </ol>`;
+    <p>The practical workflow begins with ingestion and normalization (formats, color profiles), followed by metadata extraction and signal computation. Layer business rules, provenance, and watermark checks before scoring and routing. Use thresholds to auto-approve low-risk items and queue edge cases for review. Close the loop by logging decisions with ground truth to power retraining and audits.</p>`;
 
   const deepDive = `
     <p>${loremParas(4, topic)}</p>
@@ -251,54 +238,33 @@ function buildBody({ topic, category }) {
 
   const troubleshooting = `
     <h3>Common failure modes</h3>
-    <ul>
-      <li>Overfitting to a narrow dataset; expand coverage and hard negatives.</li>
-      <li>Thresholds copied across contexts; recalibrate for each surface.</li>
-      <li>Ignoring user feedback; bake in loop to learn from corrections.</li>
-      <li>Unobserved drift; add dashboards and alerting on input/output stats.</li>
-    </ul>
+    <p>Most issues trace back to overfitting or miscalibration. Expand coverage with hard negatives, recalibrate thresholds for each surface instead of copy-pasting, and treat user feedback as training data. If drift goes unobserved, your dashboards and alerting on input/output distributions need an upgrade.</p>
     <h3>Diagnostics</h3>
     ${codeBlock(`def eval_threshold(y_true, y_score, cost_fp=5, cost_fn=1):\n    # find T minimizing expected cost\n    ...\n    return T_best`)}`;
 
   const playbook = `
-    <ol>
-      <li>Define the unacceptable outcomes and your cost model.</li>
-      <li>Choose metrics (AUPRC, FPR@TPR) and evaluation protocol.</li>
-      <li>Ship a baseline with simple guardrails and great observability.</li>
-      <li>Iterate via error analysis; add features and hard negatives.</li>
-      <li>Institutionalize postmortems and RCA for misses.</li>
-    </ol>`;
+    <p>Define unacceptable outcomes and the cost model up front. Favor metrics like AUPRC and calibrated operating points over one-size-fits-all accuracy. Ship a baseline with strong guardrails and observability, then iterate via error analysis—adding features and hard negatives. Institutionalize postmortems and root-cause analysis so improvements compound.</p>`;
 
   const evalMetrics = `
-    <p>Optimize toward business costs. For imbalanced data, prefer PR curves and report calibrated operating points. Provide uncertainty bands and consider stratified performance across key cohorts.</p>`;
+    <p>Optimize toward business costs. With imbalanced data, PR curves and calibrated thresholds are more informative than raw accuracy. Provide uncertainty bands and stratify performance across key cohorts to catch inequities early.</p>`;
 
   const datasetBias = `
-    <p>Curate diverse datasets, document sources, and perform fairness checks. Track data lineage and permissions. Use model cards and data sheets to share limits transparently.</p>`;
+    <p>Curate diverse datasets with documented sources, permissions, and lineage. Bake in fairness checks from day one. Publish model cards and data sheets so consumers understand capabilities and limits—transparency reduces misuse and surprise.</p>`;
 
   const governance = `
-    <p>Build controls aligned to ${category.toLowerCase()} requirements. Include approvals, audit logging, and clear ownership. Integrate with incident response and legal escalation paths.</p>`;
+    <p>Build controls aligned to ${category.toLowerCase()} requirements. Include approvals, audit logging, and clear ownership boundaries. Integrate with incident response and legal escalation paths before an incident forces you to.</p>`;
 
   const cases = `
-    <ul>
-      <li>Publisher intake flow: auto-approve low-risk, escalate edge cases.</li>
-      <li>Academic submission checker: highlight risky spans, require citations.</li>
-      <li>Enterprise asset review: integrate with DLP and recordkeeping.</li>
-    </ul>`;
+    <p>In a publisher intake flow, low-risk items are auto-approved while edge cases escalate to reviewers. In academic submissions, the system highlights risky spans and asks for citations. For enterprise asset review, detections integrate with DLP and recordkeeping to maintain compliance without grinding workflows to a halt.</p>`;
 
   const faqs = `
     <h3>Is 100% accuracy possible?</h3>
-    <p>No—focus on acceptable risk at the right thresholds with human review.</p>
+    <p>No. Mature systems target acceptable risk at the right thresholds with clear paths to human review.</p>
     <h3>How do we reduce false positives?</h3>
-    <p>Use multiple independent signals and calibrate per-context thresholds; tune to business cost.</p>`;
+    <p>Use independent signals, tune per-context thresholds, and align the objective to business cost—what you measure is what you improve.</p>`;
 
   const checklist = `
-    <ul>
-      <li>Define costs and metrics</li>
-      <li>Instrument logging and dashboards</li>
-      <li>Establish review routes</li>
-      <li>Ship baseline, iterate via error analysis</li>
-      <li>Document limits and governance</li>
-    </ul>`;
+    <p>Before launch, document costs and metrics, instrument logging and dashboards, and establish review routes. Ship a baseline and tighten it via error analysis. Keep documentation and governance current—today’s assumptions age fast.</p>`;
 
   const conclusion = `<p>Great detection systems are engineered experiences: layered, explainable, and continuously improved. Treat them as products, not one-off models.</p>`;
 

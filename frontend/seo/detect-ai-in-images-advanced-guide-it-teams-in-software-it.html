@@ -13,8 +13,8 @@
     header.breadcrumbs { font-size: 14px; color: var(--muted); margin: 8px 0 16px; }
     header.breadcrumbs a { color: var(--muted); text-decoration: none; }
     header.breadcrumbs a:hover { color: var(--ink); text-decoration: underline; }
-    .hero { margin: 8px 0 24px; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); }
-    .hero img { display:block; width:100%; height:auto; aspect-ratio: 1200/630; object-fit: cover; }
+  .hero { margin: 8px 0 24px; overflow: hidden; border-radius: 12px; border: 1px solid var(--border); }
+  .hero img { display:block; width:100%; height:auto; aspect-ratio: 1200/630; object-fit: cover; background: #e2e8f0; }
     h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 8px 0 12px; }
     .meta { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
     .meta .chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; border:1px solid var(--border); background:#f8fafc; color:#0f172a; }
@@ -38,56 +38,31 @@
   <body>
     <div class="wrap">
       <header class="breadcrumbs"><a href="/">Home</a> / <a href="/blog.html">Blog</a> / <a href="/blog.html?category=Software%20%26%20IT">Software & IT</a> / <span>Detect AI in Images: Advanced Guide for it teams in Software & IT</span></header>
-      <div class="hero"><img src="https://source.unsplash.com/featured/1200x630/?code%2Cdata-center%2Cserver%2Cterminal%2Cdevops%2Cai" alt="Software & IT — contextual hero image" loading="eager" decoding="async"/></div>
+  <div class="hero"><img src="https://source.unsplash.com/featured/1200x630/?code%2Cdata-center%2Cserver%2Cterminal%2Cdevops%2Cai" alt="Software & IT — contextual hero image" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'1200'%20height%3D'630'%20viewBox%3D'0%200%201200%20630'%3E%0A%20%20%20%20%3Cdefs%3E%0A%20%20%20%20%20%20%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'0'%20x2%3D'1'%20y2%3D'1'%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'0%25'%20stop-color%3D'%230ea5e9'%2F%3E%0A%20%20%20%20%20%20%20%20%3Cstop%20offset%3D'100%25'%20stop-color%3D'%231e40af'%2F%3E%0A%20%20%20%20%20%20%3C%2FlinearGradient%3E%0A%20%20%20%20%3C%2Fdefs%3E%0A%20%20%20%20%3Crect%20width%3D'1200'%20height%3D'630'%20fill%3D'url(%23g)'%2F%3E%0A%20%20%20%20%3Ctext%20x%3D'50%25'%20y%3D'50%25'%20font-family%3D'Inter%2Csystem-ui%2Csans-serif'%20font-size%3D'42'%20fill%3D'%23ffffff'%20text-anchor%3D'middle'%20dominant-baseline%3D'middle'%3ESoftware%20%26amp%3B%20IT%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E'"/></div>
       <h1>Detect AI in Images: Advanced Guide for it teams in Software & IT</h1>
       <div class="meta">
         <span class="chip"><span class="dot"></span> Software & IT</span>
         <span class="chip"><span class="dot"></span> it-teams</span>
         <span class="chip" title="Estimated reading time">⏱️ 7 min</span>
-        <span class="chip" title="Word count">📝 1,576 words</span>
+        <span class="chip" title="Word count">📝 1,546 words</span>
       </div>
       
   <div class="toc">
     <strong>On this page</strong>
-    <ol>
-      <li>Key signals</li>
-      <li>Workflow</li>
-      <li>Deep dive</li>
-      <li>Troubleshooting</li>
-      <li>Playbook</li>
-      <li>Evaluation metrics</li>
-      <li>Dataset & bias</li>
-      <li>Risk & governance</li>
-      <li>Case studies</li>
-      <li>FAQs</li>
-      <li>Checklist</li>
-      <li>Conclusion</li>
-    </ol>
+    <div>Key signals — Workflow — Deep dive — Troubleshooting — Playbook — Evaluation metrics — Dataset & bias — Risk & governance — Case studies — FAQs — Checklist — Conclusion</div>
   </div>
 
 <section>
   <h2>Key signals</h2>
   
-    <ul>
-      <li>Multi-signal fusion: combine model outputs with heuristic and EXIF/provenance checks.</li>
-      <li>Thresholds and ROC-aware decisions that reflect your false positive budget.</li>
-      <li>Context-aware policies that differ for software & it vs public UGC.</li>
-      <li>Human-in-the-loop review paths and audit trails for escalations.</li>
-      <li>Continuous monitoring for drift, adversarial inputs, and data shift.</li>
-    </ul>
+    <p>Start with multi-signal fusion that blends model outputs with provenance and metadata analysis. Calibrate thresholds with ROC-aware thinking to reflect your false positive budget. Policies should be context-aware—what works for software & it rarely maps one-to-one to public UGC. Preserve human-in-the-loop review with audit trails for escalations, and invest early in monitoring for drift, adversarial inputs, and data shifts.</p>
 </section>
 
 
 <section>
   <h2>Workflow</h2>
   
-    <ol>
-      <li>Ingest assets and normalize formats and color profiles.</li>
-      <li>Extract metadata and text; compute primary detection signals.</li>
-      <li>Apply business rules and provenance/watermark checks.</li>
-      <li>Score, threshold, and route to auto-approve or review queue.</li>
-      <li>Log decisions and ground truth for retraining and audits.</li>
-    </ol>
+    <p>The practical workflow begins with ingestion and normalization (formats, color profiles), followed by metadata extraction and signal computation. Layer business rules, provenance, and watermark checks before scoring and routing. Use thresholds to auto-approve low-risk items and queue edge cases for review. Close the loop by logging decisions with ground truth to power retraining and audits.</p>
 </section>
 
 
@@ -122,12 +97,7 @@ if final &gt; T: escalate() else: approve()</code></pre>
   <h2>Troubleshooting</h2>
   
     <h3>Common failure modes</h3>
-    <ul>
-      <li>Overfitting to a narrow dataset; expand coverage and hard negatives.</li>
-      <li>Thresholds copied across contexts; recalibrate for each surface.</li>
-      <li>Ignoring user feedback; bake in loop to learn from corrections.</li>
-      <li>Unobserved drift; add dashboards and alerting on input/output stats.</li>
-    </ul>
+    <p>Most issues trace back to overfitting or miscalibration. Expand coverage with hard negatives, recalibrate thresholds for each surface instead of copy-pasting, and treat user feedback as training data. If drift goes unobserved, your dashboards and alerting on input/output distributions need an upgrade.</p>
     <h3>Diagnostics</h3>
     
 <pre><code>def eval_threshold(y_true, y_score, cost_fp=5, cost_fn=1):
@@ -141,45 +111,35 @@ if final &gt; T: escalate() else: approve()</code></pre>
 <section>
   <h2>Playbook</h2>
   
-    <ol>
-      <li>Define the unacceptable outcomes and your cost model.</li>
-      <li>Choose metrics (AUPRC, FPR@TPR) and evaluation protocol.</li>
-      <li>Ship a baseline with simple guardrails and great observability.</li>
-      <li>Iterate via error analysis; add features and hard negatives.</li>
-      <li>Institutionalize postmortems and RCA for misses.</li>
-    </ol>
+    <p>Define unacceptable outcomes and the cost model up front. Favor metrics like AUPRC and calibrated operating points over one-size-fits-all accuracy. Ship a baseline with strong guardrails and observability, then iterate via error analysis—adding features and hard negatives. Institutionalize postmortems and root-cause analysis so improvements compound.</p>
 </section>
 
 
 <section>
   <h2>Evaluation metrics</h2>
   
-    <p>Optimize toward business costs. For imbalanced data, prefer PR curves and report calibrated operating points. Provide uncertainty bands and consider stratified performance across key cohorts.</p>
+    <p>Optimize toward business costs. With imbalanced data, PR curves and calibrated thresholds are more informative than raw accuracy. Provide uncertainty bands and stratify performance across key cohorts to catch inequities early.</p>
 </section>
 
 
 <section>
   <h2>Dataset & bias</h2>
   
-    <p>Curate diverse datasets, document sources, and perform fairness checks. Track data lineage and permissions. Use model cards and data sheets to share limits transparently.</p>
+    <p>Curate diverse datasets with documented sources, permissions, and lineage. Bake in fairness checks from day one. Publish model cards and data sheets so consumers understand capabilities and limits—transparency reduces misuse and surprise.</p>
 </section>
 
 
 <section>
   <h2>Risk & governance</h2>
   
-    <p>Build controls aligned to software & it requirements. Include approvals, audit logging, and clear ownership. Integrate with incident response and legal escalation paths.</p>
+    <p>Build controls aligned to software & it requirements. Include approvals, audit logging, and clear ownership boundaries. Integrate with incident response and legal escalation paths before an incident forces you to.</p>
 </section>
 
 
 <section>
   <h2>Case studies</h2>
   
-    <ul>
-      <li>Publisher intake flow: auto-approve low-risk, escalate edge cases.</li>
-      <li>Academic submission checker: highlight risky spans, require citations.</li>
-      <li>Enterprise asset review: integrate with DLP and recordkeeping.</li>
-    </ul>
+    <p>In a publisher intake flow, low-risk items are auto-approved while edge cases escalate to reviewers. In academic submissions, the system highlights risky spans and asks for citations. For enterprise asset review, detections integrate with DLP and recordkeeping to maintain compliance without grinding workflows to a halt.</p>
 </section>
 
 
@@ -187,35 +147,22 @@ if final &gt; T: escalate() else: approve()</code></pre>
   <h2>FAQs</h2>
   
     <h3>Is 100% accuracy possible?</h3>
-    <p>No—focus on acceptable risk at the right thresholds with human review.</p>
+    <p>No. Mature systems target acceptable risk at the right thresholds with clear paths to human review.</p>
     <h3>How do we reduce false positives?</h3>
-    <p>Use multiple independent signals and calibrate per-context thresholds; tune to business cost.</p>
+    <p>Use independent signals, tune per-context thresholds, and align the objective to business cost—what you measure is what you improve.</p>
 </section>
 
 
 <section>
   <h2>Checklist</h2>
   
-    <ul>
-      <li>Define costs and metrics</li>
-      <li>Instrument logging and dashboards</li>
-      <li>Establish review routes</li>
-      <li>Ship baseline, iterate via error analysis</li>
-      <li>Document limits and governance</li>
-    </ul>
+    <p>Before launch, document costs and metrics, instrument logging and dashboards, and establish review routes. Ship a baseline and tighten it via error analysis. Keep documentation and governance current—today’s assumptions age fast.</p>
 </section>
 
 
 <section>
   <h2>Conclusion</h2>
   <p>Great detection systems are engineered experiences: layered, explainable, and continuously improved. Treat them as products, not one-off models.</p>
-</section>
-
-<section>
-  <h2>Deep dive (continued)</h2>
-  <p>In practice, AI image detection in production raises considerations around evaluation metrics, data quality, and operational guardrails. Practitioners balance recall vs. precision, mitigate bias and drift, and implement layered controls that combine model signals, heuristics, and provenance checks. Teams should agree on escalation thresholds, human-in-the-loop reviews, and audit logging to ensure traceability. When deploying at scale, focus on maintainability, monitoring, and incident response—these matter as much as raw model quality.
-
-In practice, AI image detection in production raises considerations around evaluation metrics, data quality, and operational guardrails. Practitioners balance recall vs. precision, mitigate bias and drift, and implement layered controls that combine model signals, heuristics, and provenance checks. Teams should agree on escalation thresholds, human-in-the-loop reviews, and audit logging to ensure traceability. When deploying at scale, focus on maintainability, monitoring, and incident response—these matter as much as raw model quality.</p>
 </section>
 
 <section>
