@@ -3,7 +3,7 @@ from fastapi import FastAPI, File, UploadFile, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer.image_detector import analyze_image
 from starlette.staticfiles import StaticFiles
-from starlette.responses import FileResponse, RedirectResponse
+from starlette.responses import FileResponse, RedirectResponse, HTMLResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI(title="ProofGuard API", version="2.0")
@@ -91,6 +91,17 @@ if os.path.isdir(STATIC_DIR):
 
     # Serve all static assets from backend/static
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+
+    # Custom 404 page if available
+    @app.exception_handler(404)
+    async def not_found(request: Request, exc):
+        try:
+            path_404 = os.path.join(STATIC_DIR, "404.html")
+            if os.path.exists(path_404):
+                return FileResponse(path_404, media_type="text/html", status_code=404)
+        except Exception:
+            pass
+        return HTMLResponse("Not Found", status_code=404)
 else:
     # Fallback minimal root for non-static environment (local dev API only)
     @app.get("/")

@@ -512,10 +512,40 @@ function buildIndex(manifest) {
 function buildSitemap(manifest) {
   const base = process.env.BASE_URL || 'https://proofguard.io';
   const today = new Date().toISOString().split('T')[0];
-  const core = ['/', '/blog.html', '/seo/index.html'];
+  // Organize and prioritize sitemap entries
+  const corePages = [
+    { loc: '/', priority: '1.0', changefreq: 'daily' },
+    { loc: '/uploads.html', priority: '0.9', changefreq: 'weekly' },
+    { loc: '/result.html', priority: '0.7', changefreq: 'weekly' },
+    { loc: '/api.html', priority: '0.7', changefreq: 'monthly' },
+    { loc: '/plugins.html', priority: '0.6', changefreq: 'monthly' },
+    { loc: '/pricing.html', priority: '0.6', changefreq: 'monthly' },
+    { loc: '/docs.html', priority: '0.7', changefreq: 'monthly' },
+    { loc: '/signup.html', priority: '0.5', changefreq: 'yearly' },
+    { loc: '/seo/index.html', priority: '0.5', changefreq: 'weekly' }
+  ];
+
   const urls = [];
-  urls.push(...core.map(loc => ({ loc: base + loc, lastmod: today })));
-  urls.push(...manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0, 10) })));
+  urls.push(
+    ...corePages.map(p => ({
+      loc: base + p.loc,
+      lastmod: today,
+      priority: p.priority,
+      changefreq: p.changefreq
+    }))
+  );
+
+  // SEO article pages, sorted by slug for stable order
+  const seoPages = manifest
+    .slice()
+    .sort((a, b) => a.slug.localeCompare(b.slug))
+    .map(m => ({
+      loc: base + m.url,
+      lastmod: (m.lastmod || today).slice(0, 10),
+      priority: '0.4',
+      changefreq: 'monthly'
+    }));
+  urls.push(...seoPages);
 
   const lines = [];
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
@@ -524,6 +554,8 @@ function buildSitemap(manifest) {
     lines.push('  <url>');
     lines.push(`    <loc>${u.loc}</loc>`);
     lines.push(`    <lastmod>${u.lastmod}</lastmod>`);
+    if (u.changefreq) lines.push(`    <changefreq>${u.changefreq}</changefreq>`);
+    if (u.priority) lines.push(`    <priority>${u.priority}</priority>`);
     lines.push('  </url>');
   }
   lines.push('</urlset>');
