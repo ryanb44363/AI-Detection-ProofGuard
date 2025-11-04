@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "heroku-prebuild": "npm ci --prefix frontend",
+    "heroku-prebuild": "npm install --prefix frontend",
     "heroku-postbuild": "VITE_API_URL=/api npm run build --prefix frontend && rm -rf backend/static && mkdir -p backend/static && cp -R frontend/dist/* backend/static/ && cp -f frontend/{api.html,docs.html,plugins.html,pricing.html,uploads.html,signup.html,result.html} backend/static/ 2>/dev/null || true"
   }
 }
