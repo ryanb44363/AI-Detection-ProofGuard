@@ -25,6 +25,13 @@
       .btn-link:hover{color:#111827}
       .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
       .btn-ghost:hover{background:#f0f4f7}
+  /* Ensure hidden works across overrides */
+  [hidden]{display:none !important}
+  /* Mobile nav */
+  .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
+  .mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}
+  .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
+  .mobile-menu a:hover{background:#f8fafc;color:#111827}
       .center { text-align:center; padding: 60px 20px; }
       .muted { color: var(--muted); }
       /* Global footer */
@@ -40,6 +47,7 @@
       .foot-link:hover{color:#111827;text-decoration:underline}
       .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
       @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
+      @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
     </style>
   </head>
   <body>
@@ -49,6 +57,7 @@
         <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
       </div>
       <nav class="nav">
+        <a href="/" class="nav-link">Home</a>
         <a href="/uploads.html" class="nav-link">Uploads</a>
         <a href="/api.html" class="nav-link">API</a>
         <a href="/plugins.html" class="nav-link active">Plugins</a>
@@ -59,7 +68,18 @@
         <a href="/signup.html" class="btn-link">Log in</a>
         <a href="/signup.html" class="btn-ghost">Sign up</a>
       </div>
+      <button id="mobile-menu-button" class="mobile-toggle" aria-controls="mobile-menu" aria-expanded="false">Menu</button>
     </header>
+    <nav id="mobile-menu" class="mobile-menu" hidden>
+      <a href="/">Home</a>
+      <a href="/uploads.html">Uploads</a>
+      <a href="/api.html">API</a>
+      <a href="/plugins.html">Plugins</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/signup.html">Log in</a>
+      <a href="/signup.html">Sign up</a>
+    </nav>
 
     <main class="container">
       <div class="center">
@@ -79,7 +99,6 @@
         <div class="foot-grid">
           <div>
             <div class="foot-title">Product</div>
-            <a class="foot-link" href="/">Home</a>
             <a class="foot-link" href="/uploads.html">Uploads</a>
             <a class="foot-link" href="/pricing.html">Pricing</a>
           </div>
@@ -103,5 +122,6 @@
       </div>
     </footer>
     <script>document.getElementById('yr-pl').textContent = String(new Date().getFullYear());</script>
+    <script src="/site.js" defer></script>
   </body>
 </html>

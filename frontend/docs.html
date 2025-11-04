@@ -25,6 +25,13 @@
       .btn-link:hover{color:#111827}
       .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
       .btn-ghost:hover{background:#f0f4f7}
+  /* Ensure hidden works across overrides */
+  [hidden]{display:none !important}
+  /* Mobile nav */
+  .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
+  .mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}
+  .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
+  .mobile-menu a:hover{background:#f8fafc;color:#111827}
       .center { text-align:center; padding: 30px 20px; }
       .muted { color: var(--muted); }
       .lead { font-size: 14px; color:#374151; }
@@ -35,19 +42,7 @@
       .faq p, .faq ul { color:#374151; font-size:13px; line-height:1.6; }
       .faq code { background:#f3f4f6; border:1px solid #e5e7eb; border-radius:6px; padding: 0 4px; }
       .badge { display:inline-block; padding:2px 8px; font-size:11px; font-weight:800; border-radius:999px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
-  /* Global footer */
-  .site-footer{background:#fff;border-top:1px solid #edf0f2;margin-top:24px}
-  .foot-wrap{max-width:1100px;margin:0 auto;padding:20px}
-  .foot-brand{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-  .foot-brand .logo-img{width:28px;height:28px}
-  .fb-name{font-weight:800;font-size:16px}
-  .fb-tag{font-size:12px;color:#6b7280}
-  .foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
-  .foot-title{font-size:12px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
-  .foot-link{display:block;color:#3a424a;font-size:13px;margin:4px 0;text-decoration:none}
-  .foot-link:hover{color:#111827;text-decoration:underline}
-  .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
-  @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
+      @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
     </style>
   </head>
   <body>
@@ -57,6 +52,7 @@
         <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
       </div>
       <nav class="nav">
+        <a href="/" class="nav-link">Home</a>
         <a href="/uploads.html" class="nav-link">Uploads</a>
         <a href="/api.html" class="nav-link">API</a>
         <a href="/plugins.html" class="nav-link">Plugins</a>
@@ -67,7 +63,18 @@
         <a href="/signup.html" class="btn-link">Log in</a>
         <a href="/signup.html" class="btn-ghost">Sign up</a>
       </div>
+      <button id="mobile-menu-button" class="mobile-toggle" aria-controls="mobile-menu" aria-expanded="false">Menu</button>
     </header>
+    <nav id="mobile-menu" class="mobile-menu" hidden>
+      <a href="/">Home</a>
+      <a href="/uploads.html">Uploads</a>
+      <a href="/api.html">API</a>
+      <a href="/plugins.html">Plugins</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/signup.html">Log in</a>
+      <a href="/signup.html">Sign up</a>
+    </nav>
 
     <main class="container">
       <div class="center" style="text-align:left;">
@@ -179,41 +186,6 @@
         </details>
       </section>
     </main>
-    <footer class="site-footer">
-      <div class="foot-wrap">
-        <div class="foot-brand">
-          <img src="/favicon.svg?v=2" alt="ProofGuard" class="logo-img"/>
-          <div>
-            <div class="fb-name">ProofGuard</div>
-            <div class="fb-tag">Detect AI content — fast and free.</div>
-          </div>
-        </div>
-        <div class="foot-grid">
-          <div>
-            <div class="foot-title">Product</div>
-            <a class="foot-link" href="/">Home</a>
-            <a class="foot-link" href="/uploads.html">Uploads</a>
-            <a class="foot-link" href="/pricing.html">Pricing</a>
-          </div>
-          <div>
-            <div class="foot-title">Developers</div>
-            <a class="foot-link" href="/api.html">API</a>
-            <a class="foot-link" href="/plugins.html">Plugins</a>
-            <a class="foot-link" href="/docs.html">Docs</a>
-          </div>
-          <div>
-            <div class="foot-title">Company</div>
-            <a class="foot-link" href="#privacy">Privacy</a>
-            <a class="foot-link" href="#terms">Terms</a>
-            <a class="foot-link" href="/signup.html">Sign up</a>
-          </div>
-        </div>
-        <div class="foot-bar">
-          <div>© <span id="yr-docs"></span> ProofGuard</div>
-          <div>Made for reliable AI-content checks</div>
-        </div>
-      </div>
-    </footer>
-    <script>document.getElementById('yr-docs').textContent = String(new Date().getFullYear());</script>
   </body>
+  <script src="/site.js" defer></script>
 </html>

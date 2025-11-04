@@ -65,6 +65,13 @@
     .btn-link:hover{color:#111827}
     .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
     .btn-ghost:hover{background:#f0f4f7}
+  /* Ensure hidden works across overrides */
+  [hidden]{display:none !important}
+  /* Mobile nav */
+  .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
+  .mobile-menu{display:none;border-top:1px solid var(--stroke);background:#fff}
+  .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
+  .mobile-menu a:hover{background:#f8fafc;color:#111827}
 
     /* Main layout */
   .main { max-width:1100px; margin:0 auto; padding:18px 20px 28px; min-height: calc(100vh - 60px - 42px); }
@@ -112,6 +119,9 @@
         .navbar { padding: 0 14px; height:60px; }
         .main { padding: 14px 12px 22px; gap: 16px; }
         .upload-card { padding: 16px 12px 14px; border-radius: 20px; }
+        .nav, .actions-inline { display:none }
+        .mobile-toggle{display:block}
+        .mobile-menu{display:block}
       }
 
       /* Quick info + recent uploads */
@@ -179,6 +189,7 @@
         <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
       </div>
       <nav class="nav" aria-label="Primary">
+        <a href="/" class="nav-link">Home</a>
         <a href="/uploads.html" class="nav-link">Uploads</a>
         <a href="/api.html" class="nav-link">API</a>
         <a href="/plugins.html" class="nav-link">Plugins</a>
@@ -189,7 +200,18 @@
         <a href="/signup.html" class="btn-link">Log in</a>
         <a href="/signup.html" class="btn-ghost">Sign up</a>
       </div>
+      <button id="mobile-menu-button" class="mobile-toggle" aria-controls="mobile-menu" aria-expanded="false">Menu</button>
     </header>
+    <nav id="mobile-menu" class="mobile-menu" hidden>
+      <a href="/">Home</a>
+      <a href="/uploads.html">Uploads</a>
+      <a href="/api.html">API</a>
+      <a href="/plugins.html">Plugins</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/signup.html">Log in</a>
+      <a href="/signup.html">Sign up</a>
+    </nav>
 
   <!-- Main hero -->
     <main class="main">
@@ -359,7 +381,6 @@
         <div class="foot-grid">
           <div>
             <div class="foot-title">Product</div>
-            <a class="foot-link" href="/">Home</a>
             <a class="foot-link" href="/uploads.html">Uploads</a>
             <a class="foot-link" href="/pricing.html">Pricing</a>
           </div>
@@ -383,5 +404,6 @@
       </div>
     </footer>
     <script>document.getElementById('yr').textContent = String(new Date().getFullYear());</script>
+    <script src="/site.js" defer></script>
   </body>
 </html>

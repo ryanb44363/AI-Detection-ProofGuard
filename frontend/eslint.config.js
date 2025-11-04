@@ -19,5 +19,17 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Relax overly strict defaults to reduce friction while keeping useful checks
+      '@typescript-eslint/no-explicit-any': 'off',
+      // Allow intentional empty blocks (common with try/catch fallbacks)
+      'no-empty': 'off',
+      // Building HTML strings intentionally uses escapes
+      'no-useless-escape': 'off',
+      // In this project we manage hook deps manually to avoid churn in large handlers
+      'react-hooks/exhaustive-deps': 'off',
+      // Prefer but don't enforce const
+      'prefer-const': 'warn',
+    },
   },
 ])

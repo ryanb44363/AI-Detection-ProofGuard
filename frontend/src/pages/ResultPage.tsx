@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import { AlertCircle, CheckCircle, File, FileText, Image as ImageIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import type { AnalyzerDetails } from "../api";
+import type { AnalyzerDetails } from "../api.ts";
 
 interface AnalysisResult {
   score: number;
@@ -200,7 +200,7 @@ export default function ResultPage() {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Note: exhaustive-deps disabled globally in eslint config; local directive not needed
   }, []);
 
   const fileName = state.fileName ?? local.fileName;

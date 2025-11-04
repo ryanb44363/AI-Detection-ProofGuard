@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProofGuard – Sign up</title>
+  <title>ProofGuard – Sign up</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
-    <meta name="description" content="Signup placeholder" />
+  <meta name="description" content="Sign up for ProofGuard" />
     <style>
       :root { --bg:#f9fafb; --card:#ffffff; --border:#e5e7eb; --text:#111827; --muted:#6b7280; --blue:#2563eb; }
       * { box-sizing:border-box; }
@@ -25,25 +25,20 @@
       .btn-link:hover{color:#111827}
       .btn-ghost{background:#fff;color:#2d3a45;border:1px solid #e0e4e8;border-radius:999px;padding:8px 18px;font-weight:700;text-decoration:none}
       .btn-ghost:hover{background:#f0f4f7}
+  /* Ensure hidden works across overrides */
+  [hidden]{display:none !important}
+  /* Mobile nav */
+  .mobile-toggle{display:none;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;font-weight:700}
+  .mobile-menu{display:none;border-top:1px solid #edf0f2;background:#fff}
+  .mobile-menu a{display:block;padding:10px 16px;color:#3a424a;text-decoration:none;border-bottom:1px solid #f1f5f9}
+  .mobile-menu a:hover{background:#f8fafc;color:#111827}
       .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow: 0 6px 20px rgba(0,0,0,.04); margin-top: 28px; }
       .center { text-align:center; padding: 40px 14px; }
       .muted { color: var(--muted); }
       .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
       input { padding:10px 12px; border-radius:10px; border:1px solid var(--border); font:inherit; }
       .btn-primary { display:inline-block; background:#2563eb; color:#fff; border-radius:10px; padding:10px 16px; font-weight:700; text-decoration:none; }
-      /* Global footer */
-      .site-footer{background:#fff;border-top:1px solid #edf0f2;margin-top:24px}
-      .foot-wrap{max-width:1100px;margin:0 auto;padding:20px}
-      .foot-brand{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-      .foot-brand .logo-img{width:28px;height:28px}
-      .fb-name{font-weight:800;font-size:16px}
-      .fb-tag{font-size:12px;color:#6b7280}
-      .foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
-      .foot-title{font-size:12px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
-      .foot-link{display:block;color:#3a424a;font-size:13px;margin:4px 0;text-decoration:none}
-      .foot-link:hover{color:#111827;text-decoration:underline}
-      .foot-bar{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #edf0f2;font-size:12px;color:#6b7280}
-      @media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr}.foot-bar{flex-direction:column;align-items:flex-start;gap:8px}}
+      @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
     </style>
   </head>
   <body>
@@ -53,6 +48,7 @@
         <a href="/" class="brand-name">Proof<span class="muted-2">Guard</span></a>
       </div>
       <nav class="nav">
+        <a href="/" class="nav-link">Home</a>
         <a href="/uploads.html" class="nav-link">Uploads</a>
         <a href="/api.html" class="nav-link">API</a>
         <a href="/plugins.html" class="nav-link">Plugins</a>
@@ -63,64 +59,47 @@
         <a href="/signup.html" class="btn-link">Log in</a>
         <a href="/signup.html" class="btn-ghost">Sign up</a>
       </div>
+      <button id="mobile-menu-button" class="mobile-toggle" aria-controls="mobile-menu" aria-expanded="false">Menu</button>
     </header>
+    <nav id="mobile-menu" class="mobile-menu" hidden>
+      <a href="/">Home</a>
+      <a href="/uploads.html">Uploads</a>
+      <a href="/api.html">API</a>
+      <a href="/plugins.html">Plugins</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/signup.html">Log in</a>
+      <a href="/signup.html">Sign up</a>
+    </nav>
 
     <main class="container">
       <div class="card">
         <div class="center">
-          <h1 style="margin:0 0 8px 0; font-size:28px;">Create your account</h1>
-          <p class="muted">Signup flow coming soon. For now, this is a placeholder.</p>
+          <h1 style="margin:0 0 8px 0; font-size:28px;">Sign up for ProofGuard</h1>
+          <p class="muted">Create your account via our billing portal</p>
         </div>
-        <div style="max-width:400px; margin: 0 auto;">
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" placeholder="you@example.com" type="email" />
-          </div>
-          <div class="field">
-            <label for="password">Password</label>
-            <input id="password" placeholder="••••••••" type="password" />
-          </div>
-          <div style="text-align:center; margin-top:10px;">
-            <a class="btn-primary" href="/">Continue</a>
-          </div>
+        <div style="height: 492px;">
+          <iframe
+            src="https://billing.munus-solutions.us/widget/form/Cyq6I5TUXHrhiGFp2WGl"
+            style="width:100%;height:100%;border:none;border-radius:3px"
+            id="inline-Cyq6I5TUXHrhiGFp2WGl"
+            data-layout="{'id':'INLINE'}"
+            data-trigger-type="alwaysShow"
+            data-trigger-value=""
+            data-activation-type="alwaysActivated"
+            data-activation-value=""
+            data-deactivation-type="neverDeactivate"
+            data-deactivation-value=""
+            data-form-name="ProofGuard"
+            data-height="492"
+            data-layout-iframe-id="inline-Cyq6I5TUXHrhiGFp2WGl"
+            data-form-id="Cyq6I5TUXHrhiGFp2WGl"
+            title="ProofGuard — Sign up"
+          ></iframe>
         </div>
+        <script src="https://billing.munus-solutions.us/js/form_embed.js"></script>
       </div>
     </main>
-    <footer class="site-footer">
-      <div class="foot-wrap">
-        <div class="foot-brand">
-          <img src="/favicon.svg?v=2" alt="ProofGuard" class="logo-img"/>
-          <div>
-            <div class="fb-name">ProofGuard</div>
-            <div class="fb-tag">Detect AI content — fast and free.</div>
-          </div>
-        </div>
-        <div class="foot-grid">
-          <div>
-            <div class="foot-title">Product</div>
-            <a class="foot-link" href="/">Home</a>
-            <a class="foot-link" href="/uploads.html">Uploads</a>
-            <a class="foot-link" href="/pricing.html">Pricing</a>
-          </div>
-          <div>
-            <div class="foot-title">Developers</div>
-            <a class="foot-link" href="/api.html">API</a>
-            <a class="foot-link" href="/plugins.html">Plugins</a>
-            <a class="foot-link" href="/docs.html">Docs</a>
-          </div>
-          <div>
-            <div class="foot-title">Company</div>
-            <a class="foot-link" href="/docs.html#privacy">Privacy</a>
-            <a class="foot-link" href="/docs.html#terms">Terms</a>
-            <a class="foot-link" href="/signup.html">Sign up</a>
-          </div>
-        </div>
-        <div class="foot-bar">
-          <div>© <span id="yr-su"></span> ProofGuard</div>
-          <div>Made for reliable AI-content checks</div>
-        </div>
-      </div>
-    </footer>
-    <script>document.getElementById('yr-su').textContent = String(new Date().getFullYear());</script>
   </body>
+  <script src="/site.js" defer></script>
 </html>
