@@ -54,6 +54,24 @@ interface Payload {
   const payloadParam = getQueryParam('p');
   const key = id ? `result:${id}` : '';
 
+  // Try window.name handoff first for best preview fidelity
+  try {
+    if (window.name && window.name.includes('__pg')) {
+      const payload = JSON.parse(window.name);
+      if (payload && payload.__pg) {
+        // Clear to avoid reuse on refresh
+        window.name = '';
+        render({
+          fileName: payload.fileName,
+          previewUrl: payload.previewUrl || null,
+          isImage: !!payload.isImage,
+          result: payload.result,
+        });
+        return;
+      }
+    }
+  } catch {}
+
   function render(payload: Payload | null) {
     if (!payload) { qs('empty').classList.remove('hidden'); return; }
   const { fileName, previewUrl, isImage, result, status, error } = payload;

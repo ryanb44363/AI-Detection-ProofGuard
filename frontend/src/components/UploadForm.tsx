@@ -74,8 +74,17 @@ export default function UploadForm() {
       }
     }
 
-    // Helper: build result URL with eid or error
-    const goToResult = (opts: { eid?: string; error?: string; payloadBase64?: string }) => {
+    // Helper: build result URL with eid or error; use window.name handoff for preview+result
+    const goToResult = (opts: { eid?: string; error?: string; payloadBase64?: string; handoff?: any }) => {
+      try {
+        if (opts.handoff) {
+          // Use window.name to pass large previews without hitting storage limits
+          window.name = JSON.stringify({ __pg: 1, ...opts.handoff });
+        } else {
+          // Clear any previous handoff to avoid stale previews
+          if (window.name && window.name.includes('__pg')) window.name = '';
+        }
+      } catch {}
       const url = new URL(window.location.origin + '/result.html');
       if (opts.eid) url.searchParams.set('eid', opts.eid);
       if (opts.error) url.searchParams.set('error', opts.error);
@@ -89,12 +98,12 @@ export default function UploadForm() {
       let eid: string | null = null;
       try { eid = await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: res }); } catch {}
       if (eid) {
-        goToResult({ eid });
+        goToResult({ eid, handoff: { fileName: file.name, previewUrl: previewDataUrl, isImage, result: res } });
       } else {
         // Fallback if storage fails: inline minimal payload via URL param 'p'
         const minimal = {
           fileName: file.name,
-          previewUrl: null as string | null, // avoid heavy data in URL
+          previewUrl: previewDataUrl && previewDataUrl.length < 800000 ? previewDataUrl : null, // include if reasonably small
           isImage,
           result: {
             score: res?.score ?? 0,
@@ -104,9 +113,9 @@ export default function UploadForm() {
         };
         try {
           const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(minimal))));
-          goToResult({ payloadBase64: encoded });
+          goToResult({ payloadBase64: encoded, handoff: { fileName: file.name, previewUrl: previewDataUrl, isImage, result: res } });
         } catch {
-          goToResult({ error: encodeURIComponent('Analysis complete, but could not display result') });
+          goToResult({ error: encodeURIComponent('Analysis complete, but could not display result'), handoff: { fileName: file.name, previewUrl: previewDataUrl, isImage, result: res } });
         }
       }
     } catch (err: unknown) {
@@ -121,11 +130,11 @@ export default function UploadForm() {
         let eid: string | null = null;
         try { eid = await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: localRes as any }); } catch {}
         if (eid) {
-          goToResult({ eid });
+          goToResult({ eid, handoff: { fileName: file.name, previewUrl: previewDataUrl, isImage, result: localRes } });
         } else {
           const minimal = {
             fileName: file.name,
-            previewUrl: null as string | null,
+            previewUrl: previewDataUrl && previewDataUrl.length < 800000 ? previewDataUrl : null,
             isImage,
             result: {
               score: (localRes as any)?.score ?? 0,
@@ -135,9 +144,9 @@ export default function UploadForm() {
           };
           try {
             const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(minimal))));
-            goToResult({ payloadBase64: encoded });
+            goToResult({ payloadBase64: encoded, handoff: { fileName: file.name, previewUrl: previewDataUrl, isImage, result: localRes } });
           } catch {
-            goToResult({ error: encodeURIComponent('Analysis complete, but could not display result') });
+            goToResult({ error: encodeURIComponent('Analysis complete, but could not display result'), handoff: { fileName: file.name, previewUrl: previewDataUrl, isImage, result: localRes } });
           }
         }
       } catch {
