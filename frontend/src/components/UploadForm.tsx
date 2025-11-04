@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Loader2 } from "lucide-react";
 import { analyzeFile } from "../api.ts";
-import type { AnalysisResult as ApiAnalysisResult } from "../api.ts";
 
 interface AnalysisResult {
   score: number;
