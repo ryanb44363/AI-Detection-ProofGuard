@@ -48,10 +48,9 @@ interface Payload {
 }
 
 (function main() {
-  let id = getQueryParam('id');
-  // allow '/result.html' without id to still try rendering
-  if (id === null) id = '';
-  const key = id ? `result:${id}` : '';
+  const id = getQueryParam('id');
+  if (!id) { qs('empty').classList.remove('hidden'); return; }
+  const key = `result:${id}`;
 
   function render(payload: Payload | null) {
     if (!payload) { qs('empty').classList.remove('hidden'); return; }
@@ -288,76 +287,14 @@ interface Payload {
     qs('content').classList.remove('hidden');
   }
 
-  function decodeHashPayload(): Partial<Payload> | null {
-    try {
-      const h = window.location.hash || '';
-      if (!h.startsWith('#')) return null;
-      const params = new URLSearchParams(h.slice(1));
-      const d = params.get('d');
-      if (!d) return null;
-      const json = atob(d.replace(/-/g,'+').replace(/_/g,'/'));
-      const obj = JSON.parse(json);
-      if (obj && typeof obj === 'object') return obj as Partial<Payload>;
-    } catch {}
-    return null;
-  }
-
-  function getFromUploads(tsHint: number | null): Payload | null {
-    try {
-      const raw = localStorage.getItem('pg_uploads');
-      const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
-      if (!Array.isArray(arr) || !arr.length) return null;
-      let best = arr[0];
-      if (typeof tsHint === 'number') {
-        let bestDiff = Math.abs((Number(best?.ts)||0) - tsHint);
-        for (const e of arr) {
-          const diff = Math.abs((Number(e?.ts)||0) - tsHint);
-          if (diff < bestDiff) { best = e; bestDiff = diff; }
-        }
-        // Only accept if reasonably close (within ~2 minutes)
-        if (best && Math.abs((Number(best?.ts)||0) - tsHint) > 120000) return null;
-      }
-      if (!best) return null;
-      return {
-        fileName: best.fileName,
-        previewUrl: best.previewUrl || null,
-        isImage: best.kind === 'image',
-        result: best.result,
-      } as Payload;
-    } catch { return null; }
-  }
-
   function getPayload(): Payload | null {
-    // 1) Primary: exact localStorage entry
-    if (key) {
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        try { return JSON.parse(raw); } catch {}
-      }
-    }
-    // 2) Hash payload (minimal, no large preview)
-    const hashObj = decodeHashPayload();
-    if (hashObj && (hashObj.result || hashObj.fileName)) {
-      return { ...hashObj } as Payload;
-    }
-    // 3) Fallback to uploads history using timestamp in id (if present)
-    const ts = id ? (Number(String(id).split('-')[0]) || null) : null;
-    let fromUploads = getFromUploads(ts);
-    // 4) If still missing (no id provided), use latest upload entry
-    if (!fromUploads && !id) {
-      fromUploads = getFromUploads(null);
-    }
-    if (fromUploads) return fromUploads;
-    return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
   }
 
   // Initial render
-  const initial = getPayload();
-  if (!initial) {
-    qs('empty').classList.remove('hidden');
-  } else {
-    render(initial);
-  }
+  render(getPayload());
 
   // Listen for updates from the upload page
   window.addEventListener('storage', (e) => {

@@ -4,4 +4,3 @@ uvicorn
 python-multipart
 pillow
 pdfminer.six
- pillow-heif

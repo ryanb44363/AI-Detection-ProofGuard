@@ -512,54 +512,18 @@ function buildIndex(manifest) {
 function buildSitemap(manifest) {
   const base = process.env.BASE_URL || 'https://proofguard.io';
   const today = new Date().toISOString().split('T')[0];
-  // Organize and prioritize sitemap entries
-  const corePages = [
-    { loc: '/', priority: '1.0', changefreq: 'daily' },
-    { loc: '/uploads.html', priority: '0.9', changefreq: 'weekly' },
-    { loc: '/result.html', priority: '0.7', changefreq: 'weekly' },
-    { loc: '/api.html', priority: '0.7', changefreq: 'monthly' },
-    { loc: '/plugins.html', priority: '0.6', changefreq: 'monthly' },
-    { loc: '/pricing.html', priority: '0.6', changefreq: 'monthly' },
-    { loc: '/docs.html', priority: '0.7', changefreq: 'monthly' },
-    { loc: '/signup.html', priority: '0.5', changefreq: 'yearly' },
-    { loc: '/seo/index.html', priority: '0.5', changefreq: 'weekly' }
+  const core = [
+    '/', '/blog.html', '/seo/index.html'
   ];
+  const urls = [
+    ...core.map(loc => ({ loc: base + loc, lastmod: today })),
+    ...manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0,10) })),
+  ];
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    ${urls.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('')}
+  </urlset>`;
 
-  const urls = [];
-  urls.push(
-    ...corePages.map(p => ({
-      loc: base + p.loc,
-      lastmod: today,
-      priority: p.priority,
-      changefreq: p.changefreq
-    }))
-  );
-
-  // SEO article pages, sorted by slug for stable order
-  const seoPages = manifest
-    .slice()
-    .sort((a, b) => a.slug.localeCompare(b.slug))
-    .map(m => ({
-      loc: base + m.url,
-      lastmod: (m.lastmod || today).slice(0, 10),
-      priority: '0.4',
-      changefreq: 'monthly'
-    }));
-  urls.push(...seoPages);
-
-  const lines = [];
-  lines.push('<?xml version="1.0" encoding="UTF-8"?>');
-  lines.push('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-  for (const u of urls) {
-    lines.push('  <url>');
-    lines.push(`    <loc>${u.loc}</loc>`);
-    lines.push(`    <lastmod>${u.lastmod}</lastmod>`);
-    if (u.changefreq) lines.push(`    <changefreq>${u.changefreq}</changefreq>`);
-    if (u.priority) lines.push(`    <priority>${u.priority}</priority>`);
-    lines.push('  </url>');
-  }
-  lines.push('</urlset>');
-  const xml = lines.join('\n') + '\n';
   writeFile(path.join(SEO_DIR, 'sitemap.xml'), xml);
 }
 
