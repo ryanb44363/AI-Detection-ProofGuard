@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://proofguard.io/sitemap.xml
+Sitemap: https://proofguard.io/sitemap_index.xml

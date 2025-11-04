@@ -509,22 +509,67 @@ function buildIndex(manifest) {
   writeFile(path.join(SEO_DIR, 'index.html'), html);
 }
 
-function buildSitemap(manifest) {
+// Yoast-style sitemaps: sitemap_index.xml + segmented sitemaps
+function buildYoastSitemaps(manifest) {
   const base = process.env.BASE_URL || 'https://proofguard.io';
   const today = new Date().toISOString().split('T')[0];
-  const core = [
-    '/', '/blog.html', '/seo/index.html'
-  ];
-  const urls = [
-    ...core.map(loc => ({ loc: base + loc, lastmod: today })),
-    ...manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0,10) })),
-  ];
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    ${urls.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('')}
-  </urlset>`;
 
-  writeFile(path.join(SEO_DIR, 'sitemap.xml'), xml);
+  // Core pages (akin to "pages" in Yoast)
+  const corePages = [
+    '/',
+    '/uploads.html',
+    '/api.html',
+    '/plugins.html',
+    '/pricing.html',
+    '/docs.html',
+    '/signup.html',
+    '/blog.html',
+    '/seo/index.html'
+  ];
+
+  // Page sitemap
+  const pageEntries = corePages.map(loc => ({ loc: base + loc, lastmod: today }));
+  const pageXml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    pageEntries.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('') +
+    `</urlset>`;
+  writeFile(path.join(SEO_DIR, 'page-sitemap.xml'), pageXml);
+
+  // Post sitemap (our generated SEO articles)
+  const postEntries = manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0, 10) }));
+
+  // Chunk if ever over the 50k URL limit; currently 1000, so single chunk
+  const CHUNK = 49000;
+  const postSitemaps = [];
+  for (let i = 0; i < postEntries.length; i += CHUNK) {
+    const chunk = postEntries.slice(i, i + CHUNK);
+    const idx = (i / CHUNK) + 1;
+    const name = postEntries.length > CHUNK ? `post-sitemap${idx}.xml` : 'post-sitemap.xml';
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      chunk.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('') +
+      `</urlset>`;
+    writeFile(path.join(SEO_DIR, name), xml);
+    postSitemaps.push({ name, lastmod: chunk[0]?.lastmod || today });
+  }
+
+  // Sitemap index
+  const sitemapIndexItems = [
+    { loc: `${base}/seo/page-sitemap.xml`, lastmod: today },
+    ...postSitemaps.map(ps => ({ loc: `${base}/seo/${ps.name}`, lastmod: ps.lastmod }))
+  ];
+  const indexXml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+    sitemapIndexItems.map(s => `<sitemap><loc>${s.loc}</loc><lastmod>${s.lastmod}</lastmod></sitemap>`).join('') +
+    `</sitemapindex>`;
+  writeFile(path.join(SEO_DIR, 'sitemap_index.xml'), indexXml);
+
+  // Back-compat simple sitemap.xml (optional): point to the same pages+posts combined
+  const simpleCombined = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    [...pageEntries, ...postEntries].map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('') +
+    `</urlset>`;
+  writeFile(path.join(SEO_DIR, 'sitemap.xml'), simpleCombined);
 }
 
 function buildRobotsTxt() {
@@ -532,7 +577,7 @@ function buildRobotsTxt() {
   const lines = [
     'User-agent: *',
     'Allow: /',
-    `Sitemap: ${base}/sitemap.xml`,
+    `Sitemap: ${base}/sitemap_index.xml`,
     ''
   ];
   writeFile(path.join(SEO_DIR, 'robots.txt'), lines.join('\n'));
@@ -542,7 +587,7 @@ function main() {
   ensureDir(SEO_DIR);
   const manifest = generateArticles(1000);
   buildIndex(manifest);
-  buildSitemap(manifest);
+  buildYoastSitemaps(manifest);
   buildRobotsTxt();
   console.log(`Generated 1000 SEO pages at ${SEO_DIR} (manifest and sitemap included)`);
 }
