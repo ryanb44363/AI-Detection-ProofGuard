@@ -49,29 +49,29 @@ export default function UploadForm() {
     setError(null);
     setLoading(true);
 
-    // Prepare preview data URL for images, PDFs (first-page image), or text
+    // Prepare preview data URL for images, PDFs, or text (so new tab can render without blob revocation)
     let previewDataUrl: string | null = null;
-    try {
-      if (isTextLike) {
-        const text = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ""));
-          reader.onerror = () => reject(new Error("Failed to read text"));
-          reader.readAsText(file);
-        });
-        previewDataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(text.slice(0, 20000))}`; // cap size
-      } else if (isPdf) {
-        previewDataUrl = await renderPdfFirstPageToDataUrl(file);
-      } else if (isImage) {
-        previewDataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error("Failed to read file for preview"));
-          reader.readAsDataURL(file);
-        });
+    if (isImage || isPdf || isTextLike) {
+      try {
+        if (isTextLike) {
+          const text = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(new Error("Failed to read text"));
+            reader.readAsText(file);
+          });
+          previewDataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(text.slice(0, 20000))}`; // cap size
+        } else {
+          previewDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("Failed to read file for preview"));
+            reader.readAsDataURL(file);
+          });
+        }
+      } catch {
+        // ignore preview failures
       }
-    } catch {
-      // ignore preview failures
     }
 
     // Helper: build result URL with eid or error
@@ -89,13 +89,12 @@ export default function UploadForm() {
       let eid: string | null = null;
       try { eid = await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: res }); } catch {}
       if (eid) {
-        try { if (previewDataUrl) sessionStorage.setItem(`preview:${eid}`, previewDataUrl); } catch {}
         goToResult({ eid });
       } else {
         // Fallback if storage fails: inline minimal payload via URL param 'p'
         const minimal = {
           fileName: file.name,
-          previewUrl: previewDataUrl && previewDataUrl.length < 120000 ? previewDataUrl : null,
+          previewUrl: null as string | null, // avoid heavy data in URL
           isImage,
           result: {
             score: res?.score ?? 0,
@@ -122,12 +121,11 @@ export default function UploadForm() {
         let eid: string | null = null;
         try { eid = await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: localRes as any }); } catch {}
         if (eid) {
-          try { if (previewDataUrl) sessionStorage.setItem(`preview:${eid}`, previewDataUrl); } catch {}
           goToResult({ eid });
         } else {
           const minimal = {
             fileName: file.name,
-            previewUrl: previewDataUrl && previewDataUrl.length < 120000 ? previewDataUrl : null,
+            previewUrl: null as string | null,
             isImage,
             result: {
               score: (localRes as any)?.score ?? 0,
@@ -178,29 +176,6 @@ export default function UploadForm() {
         img.src = dataUrl;
       } catch { resolve(null); }
     });
-  }
-
-  // Generate a lightweight preview image for PDFs (first page) using pdf.js
-  async function renderPdfFirstPageToDataUrl(file: File, scale = 0.8): Promise<string | null> {
-    try {
-      const pdfjsLib: any = await import('pdfjs-dist/legacy/build/pdf');
-      if (pdfjsLib?.GlobalWorkerOptions) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js';
-      }
-      const ab = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: ab });
-      const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      return canvas.toDataURL('image/jpeg', 0.85);
-    } catch {
-      return null;
-    }
   }
 
   async function saveLocalUpload(opts: { file: File; previewDataUrl: string | null; isImage: boolean; isPdf: boolean; result: any }): Promise<string | null> {

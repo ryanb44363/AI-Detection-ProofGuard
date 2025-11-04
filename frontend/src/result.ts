@@ -73,15 +73,10 @@ interface Payload {
   const box = qs('preview-box');
     box.innerHTML = '';
     const ext = (fileName || '').split('.').pop()?.toLowerCase();
-    // Prefer a session-scoped full preview if available (set on upload)
-    const eid = getQueryParam('eid');
-    let sessionPreview: string | null = null;
-    try { if (eid) sessionPreview = sessionStorage.getItem(`preview:${eid}`); } catch {}
-    const purl = sessionPreview || previewUrl || '';
-    if (isImage && purl && purl.startsWith('data:image')) {
+    if (isImage && previewUrl) {
       const img = document.createElement('img');
       img.alt = fileName || 'preview';
-      img.src = purl;
+      img.src = previewUrl;
       img.style.position = 'absolute';
       img.style.inset = '0';
       img.style.width = '100%';
@@ -89,21 +84,21 @@ interface Payload {
       img.style.objectFit = 'cover';
       img.classList.remove('hidden');
       box.appendChild(img);
-    } else if ((ext === 'pdf' && purl && purl.startsWith('data:image')) || (purl && purl.startsWith('data:image'))) {
-      // PDF first-page image or generic image preview
-      const img = document.createElement('img');
-      img.alt = fileName || 'preview';
-      img.src = purl;
-      img.style.position = 'absolute';
-      img.style.inset = '0';
-      img.style.width = '100%';
-      img.style.height = '100%';
-      img.style.objectFit = 'contain';
-      img.classList.remove('hidden');
-      box.appendChild(img);
-    } else if (purl && purl.startsWith('data:text')) {
+  } else if (ext === 'pdf' && previewUrl) {
       const iframe = document.createElement('iframe');
-      iframe.src = purl;
+      iframe.src = `${previewUrl}#view=FitH`;
+      iframe.title = fileName || 'pdf';
+      iframe.style.position = 'absolute';
+      iframe.style.inset = '0';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = '0';
+      box.style.paddingTop = '0';
+      box.style.height = '520px';
+      box.appendChild(iframe);
+    } else if (previewUrl && previewUrl.startsWith('data:text')) {
+      const iframe = document.createElement('iframe');
+      iframe.src = previewUrl;
       iframe.title = fileName || 'text';
       iframe.style.position = 'absolute';
       iframe.style.inset = '0';
@@ -121,7 +116,7 @@ interface Payload {
       placeholder.style.position = 'absolute';
       placeholder.style.inset = '0';
       placeholder.style.color = '#6b7280';
-      placeholder.innerHTML = '<div style="text-align:center">\n        <div style="font-size:32px">📎</div>\n        <div style="margin-top:6px">Preview unavailable for this file</div>\n      </div>';
+      placeholder.textContent = 'No preview available';
       box.appendChild(placeholder);
     }
 
