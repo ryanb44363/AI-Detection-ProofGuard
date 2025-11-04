@@ -51,7 +51,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))  # backend/
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 if os.path.isdir(STATIC_DIR):
-    # Serve index.html and assets from backend/static
+    # Serve uploads.html at root if present, then fall back to index.html
+    @app.get("/")
+    def serve_root():
+        uploads_path = os.path.join(STATIC_DIR, "uploads.html")
+        index_path = os.path.join(STATIC_DIR, "index.html")
+        if os.path.exists(uploads_path):
+            return FileResponse(uploads_path, media_type="text/html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path, media_type="text/html")
+        return {"status": "ok", "message": "Frontend build missing"}
+
+    # Serve all static assets from backend/static
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 else:
     # Fallback minimal root for non-static environment (local dev API only)
