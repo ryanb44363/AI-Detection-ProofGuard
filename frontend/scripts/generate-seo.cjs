@@ -510,7 +510,7 @@ function buildIndex(manifest) {
 }
 
 function buildSitemap(manifest) {
-  const base = 'https://proofguard-f2d9b75828b7.herokuapp.com';
+  const base = process.env.BASE_URL || 'https://proofguard.io';
   const today = new Date().toISOString().split('T')[0];
   const core = [
     '/', '/blog.html', '/seo/index.html'
@@ -528,10 +528,11 @@ function buildSitemap(manifest) {
 }
 
 function buildRobotsTxt() {
+  const base = process.env.BASE_URL || 'https://proofguard.io';
   const lines = [
     'User-agent: *',
     'Allow: /',
-    'Sitemap: https://proofguard-f2d9b75828b7.herokuapp.com/sitemap.xml',
+    `Sitemap: ${base}/sitemap.xml`,
     ''
   ];
   writeFile(path.join(SEO_DIR, 'robots.txt'), lines.join('\n'));

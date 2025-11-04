@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://proofguard-f2d9b75828b7.herokuapp.com/sitemap.xml
+Sitemap: https://proofguard.io/sitemap.xml

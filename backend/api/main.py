@@ -1,9 +1,10 @@
 import os
-from fastapi import FastAPI, File, UploadFile, APIRouter
+from fastapi import FastAPI, File, UploadFile, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer.image_detector import analyze_image
 from starlette.staticfiles import StaticFiles
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, RedirectResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI(title="ProofGuard API", version="2.0")
 api_router = APIRouter()
@@ -15,6 +16,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Enforce canonical host/https in production
+CANONICAL_HOST = os.getenv("CANONICAL_HOST", "proofguard.io")
+
+class CanonicalRedirectMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        try:
+            host = request.headers.get("host", "")
+            scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+            # Skip redirects for local dev
+            if host.startswith("localhost") or host.startswith("127.0.0.1"):
+                return await call_next(request)
+            # Only enforce when a canonical host is configured
+            if CANONICAL_HOST:
+                need_host_redirect = host and host != CANONICAL_HOST and host != f"www.{CANONICAL_HOST}"
+                need_https_redirect = scheme != "https"
+                if need_host_redirect or need_https_redirect:
+                    url = request.url.replace(netloc=CANONICAL_HOST, scheme="https")
+                    return RedirectResponse(str(url), status_code=308)
+        except Exception:
+            # On any error, do not block the request
+            pass
+        return await call_next(request)
+
+app.add_middleware(CanonicalRedirectMiddleware)
 
 @api_router.get("/")
 def root():
