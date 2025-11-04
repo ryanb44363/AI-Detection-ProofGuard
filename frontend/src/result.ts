@@ -48,9 +48,10 @@ interface Payload {
 }
 
 (function main() {
-  const id = getQueryParam('id');
-  if (!id) { qs('empty').classList.remove('hidden'); return; }
-  const key = `result:${id}`;
+  let id = getQueryParam('id');
+  // allow '/result.html' without id to still try rendering
+  if (id === null) id = '';
+  const key = id ? `result:${id}` : '';
 
   function render(payload: Payload | null) {
     if (!payload) { qs('empty').classList.remove('hidden'); return; }
@@ -328,24 +329,35 @@ interface Payload {
 
   function getPayload(): Payload | null {
     // 1) Primary: exact localStorage entry
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      try { return JSON.parse(raw); } catch {}
+    if (key) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try { return JSON.parse(raw); } catch {}
+      }
     }
     // 2) Hash payload (minimal, no large preview)
     const hashObj = decodeHashPayload();
     if (hashObj && (hashObj.result || hashObj.fileName)) {
       return { ...hashObj } as Payload;
     }
-    // 3) Fallback to uploads history using timestamp in id
-    const ts = Number(String(id).split('-')[0]) || null;
-    const fromUploads = getFromUploads(ts);
+    // 3) Fallback to uploads history using timestamp in id (if present)
+    const ts = id ? (Number(String(id).split('-')[0]) || null) : null;
+    let fromUploads = getFromUploads(ts);
+    // 4) If still missing (no id provided), use latest upload entry
+    if (!fromUploads && !id) {
+      fromUploads = getFromUploads(null);
+    }
     if (fromUploads) return fromUploads;
     return null;
   }
 
   // Initial render
-  render(getPayload());
+  const initial = getPayload();
+  if (!initial) {
+    qs('empty').classList.remove('hidden');
+  } else {
+    render(initial);
+  }
 
   // Listen for updates from the upload page
   window.addEventListener('storage', (e) => {
