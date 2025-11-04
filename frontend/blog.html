@@ -211,10 +211,30 @@
       SEARCH.addEventListener('input', applyFilter);
       CAT.addEventListener('change', applyFilter);
 
+      // Preload filters from query params
+      const params = new URLSearchParams(location.search);
+      const q0 = params.get('q') || '';
+      const c0 = params.get('category') || '';
+      const p0 = parseInt(params.get('page') || '1', 10);
+      if (q0) SEARCH.value = q0;
+      if (c0) CAT.value = c0;
+      if (Number.isFinite(p0) && p0 > 0) page = p0;
+
       fetch('/seo/manifest.json', {cache:'no-store'})
         .then(r=>r.json())
-        .then(data=>{ items = data.items||[]; filtered = items.slice(); render(); })
+        .then(data=>{ items = data.items||[]; applyFilter(); })
         .catch(()=>{ RESULTS.innerHTML = '<p class="muted">Unable to load posts right now.</p>'; });
+
+      function updateUrl(){
+        const u = new URL(location.href);
+        if (SEARCH.value) u.searchParams.set('q', SEARCH.value); else u.searchParams.delete('q');
+        if (CAT.value) u.searchParams.set('category', CAT.value); else u.searchParams.delete('category');
+        u.searchParams.set('page', String(page));
+        history.replaceState(null, '', u.toString());
+      }
+
+      const oldRender = render;
+      render = function(){ oldRender(); updateUrl(); };
     </script>
     <script src="/site.js" defer></script>
   </body>

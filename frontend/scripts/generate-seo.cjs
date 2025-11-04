@@ -259,11 +259,38 @@ function makeLongContent(topic, meta){
       </ul>
     </div>`;
 
+  const deepDive = [
+    `Adversarial examples can confound detectors by mimicking natural noise profiles. Favor explanations that cite multiple independent signals over one opaque score.`,
+    `Compression ladders alter artifacts. When possible, analyze closest-to-source media or request originals to avoid misattribution from platform filters.`,
+    `Context trumps cosmetics: genuine content can look unusual; evaluate the claim being made and whether the evidence is proportional.`,
+    `Avoid overfitting: a pattern seen in one model’s output may also appear in benign content. Seek signal convergence across methods.`,
+  ];
+  const troubleshooting = [
+    `If OCR is empty, try higher-resolution scans or contrast adjustments.`,
+    `If EXIF is missing, ask for capture details or a direct-from-device copy.`,
+    `When edge density is low due to blur, verify with scene context; motion can explain smoothness.`,
+    `For text with repetitive cadence, request sources and draft history to establish authorship.`,
+  ];
+  const playbook = [
+    `Triage quickly: score, breakdown, provenance.`,
+    `Escalate when signals disagree and the claim matters.`,
+    `Record decisions with rationale for later audits.`,
+  ];
+
   const body = `
     <article class="article" itemscope itemtype="https://schema.org/Article">
       <header>
         <h1 id="intro" itemprop="headline">${t}</h1>
-        <div class="meta"><span>${meta.category}</span><span>•</span><span>${meta.format}</span><span>•</span><span>${meta.modifier}${meta.audience?` ${meta.audience}`:''}</span></div>
+        <nav aria-label="Breadcrumb" style="font-size:13px;margin-bottom:6px;">
+          <a href="/" style="color:#2563eb;text-decoration:none;">Home</a>
+          <span class="muted"> / </span>
+          <a href="/blog.html" style="color:#2563eb;text-decoration:none;">Blog</a>
+          <span class="muted"> / </span>
+          <a href="/blog.html?category=${encodeURIComponent(meta.category)}" style="color:#2563eb;text-decoration:none;">${meta.category}</a>
+          <span class="muted"> / </span>
+          <span>${t}</span>
+        </nav>
+        <div class="meta"><span>${meta.category}</span><span>•</span><span>${meta.format}</span><span>•</span><span>${meta.modifier}${meta.audience?` ${meta.audience}`:''}</span><span>•</span><span id="wc">Loading…</span></div>
       </header>
       ${toc}
       ${paragraphize(introSentences, 5)}
@@ -280,6 +307,12 @@ function makeLongContent(topic, meta){
       <pre><code>curl -X POST https://proofguard.example.com/api/analyze \
   -F file=@sample.jpg
       </code></pre>
+      <h2 id="deep-dive">Deep dive: anti-patterns</h2>
+      ${paragraphize(deepDive, 3)}
+      <h2 id="troubleshooting">Troubleshooting</h2>
+      <ul>${troubleshooting.map(x=>`<li>${x}</li>`).join('')}</ul>
+      <h3 id="playbook">Playbook</h3>
+      <ol>${playbook.map(x=>`<li>${x}</li>`).join('')}</ol>
       <h2 id="cases">Case studies</h2>
       ${cases.map(c=>`<p>${c}</p>`).join('')}
       <h2 id="faq">FAQs</h2>
@@ -293,10 +326,17 @@ function makeLongContent(topic, meta){
     </article>
   `;
 
-  // Ensure >=1500 words by appending additional field notes if needed
+  // Ensure >=1500 words by appending varied insights if needed
   let html = body;
-  const fieldNote = `<p><strong>Field note:</strong> When multiple weak signals line up—like subtle texture smearing, uneven edge density, and missing provenance—treat the aggregate as meaningful but continue seeking independent corroboration. When signals contradict, pause and reframe the question: what specific claim is being made, and what evidence would change your mind?</p>`;
-  while(countWords(html) < 1550){ html += fieldNote; }
+  const insights = [
+    `<p><strong>Insight:</strong> Beware confirmation bias—scores that match prior expectations still merit independent checks.</p>`,
+    `<p><strong>Insight:</strong> Platform re-encoding can mimic synthetic artifacts. Verify with original uploads where possible.</p>`,
+    `<p><strong>Insight:</strong> Blend quantitative metrics with qualitative review of narrative consistency and source credibility.</p>`,
+    `<p><strong>Insight:</strong> Time-box deep dives; unresolved cases benefit from explicit uncertainty notes rather than over-analysis.</p>`,
+    `<p><strong>Insight:</strong> For long text, sample multiple sections; localized artifacts can skew overall impressions.</p>`
+  ];
+  let k = 0;
+  while(countWords(html) < 1600){ html += insights[k % insights.length]; k++; }
   return html;
 }
 
@@ -402,6 +442,16 @@ function main() {
 
   // Write index
   fs.writeFileSync(path.join(OUT_DIR, 'index.html'), buildIndex(topics), 'utf8');
+
+  // Add client-side word count injection for each page (lightweight): replace placeholder if present
+  try {
+    for (const it of manifest.items) {
+      const fp = path.join(OUT_DIR, `${it.slug}.html`);
+      let html = fs.readFileSync(fp, 'utf8');
+      html = html.replace('<span id="wc">Loading…</span>', `<span id="wc">${it.wordCount} words</span>`);
+      fs.writeFileSync(fp, html, 'utf8');
+    }
+  } catch {}
 
   console.log(`Generated ${written} SEO pages at ${OUT_DIR} (manifest included)`);
 }

@@ -38,8 +38,8 @@ export default function UploadForm() {
     // Same-tab behavior: no pre-opened tab; we'll navigate to the generated result page when ready
 
     // Determine type for preview generation (image/pdf/text supported)
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    const isImage = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg"].includes(ext || "");
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  const isImage = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "heic", "heif", "tif", "tiff", "raw", "arw", "cr2", "nef"].includes(ext || "");
     const isPdf = ext === "pdf";
     const textLikeExts = [
       "txt", "md", "markdown", "csv", "tsv", "json", "log", "html", "css", "js", "jsx", "ts", "tsx", "py", "java", "c", "cpp", "h", "hpp", "cs", "rb", "go", "rs", "php", "sh", "yml", "yaml", "xml", "ini", "conf", "cfg", "toml",
@@ -421,10 +421,19 @@ export default function UploadForm() {
       : "";
 
     const previewSection = (() => {
+      const typeFromDataUrl = (url: string | null): string => {
+        if (!url || !url.startsWith('data:')) return '';
+        const m = url.match(/^data:([^;]+);/i);
+        return m ? m[1].toLowerCase() : '';
+      };
+      const mime = typeFromDataUrl(previewUrl);
+      const supportedImageMimes = new Set(["image/jpeg","image/png","image/webp","image/gif","image/bmp","image/svg+xml"]);
+      const fileTag = (fileName || '').split('.').pop()?.toUpperCase();
+      const unsupportedImage = isImage && (!mime || !supportedImageMimes.has(mime));
       if (!previewUrl) {
         return `
           <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
-            <div class="muted">No preview available</div>
+            <div class="muted">${isImage ? (fileTag ? `${fileTag} preview not supported in browsers` : 'Image preview not supported') : 'No preview available'}</div>
           </div>`;
       }
       if (isPdf) {
@@ -439,10 +448,16 @@ export default function UploadForm() {
             <iframe src="${previewUrl}" title="${fileName}"></iframe>
           </div>`;
       }
-      if (isImage) {
+      if (isImage && !unsupportedImage) {
         return `
           <div class="preview-box">
             <img src="${previewUrl}" alt="${fileName}" />
+          </div>`;
+      }
+      if (isImage && unsupportedImage) {
+        return `
+          <div class="preview-box" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#f5f3ff)">
+            <div class="muted">${fileTag || 'Image'} preview not supported in browsers; analysis still performed.</div>
           </div>`;
       }
       return `
