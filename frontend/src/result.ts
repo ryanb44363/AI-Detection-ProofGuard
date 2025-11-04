@@ -51,6 +51,7 @@ interface Payload {
   const id = getQueryParam('id');
   const eid = getQueryParam('eid');
   const errParam = getQueryParam('error');
+  const payloadParam = getQueryParam('p');
   const key = id ? `result:${id}` : '';
 
   function render(payload: Payload | null) {
@@ -294,6 +295,18 @@ interface Payload {
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  // If there is an inline payload param, decode and render immediately
+  if (payloadParam) {
+    try {
+      const json = decodeURIComponent(escape(atob(payloadParam)));
+      const payload = JSON.parse(json);
+      render(payload);
+      return;
+    } catch {
+      // fall through to other paths
+    }
+  }
+
   // If there's an explicit error param, show error immediately
   if (errParam) {
     const msg = decodeURIComponent(errParam);
@@ -313,7 +326,7 @@ interface Payload {
       if (entry) {
         const payload: Payload = {
           fileName: entry.fileName,
-          previewUrl: entry.previewUrl || null,
+          previewUrl: entry.previewUrl || entry.thumbUrl || null,
           isImage: entry.kind === 'image',
           result: entry.result,
         };
@@ -335,7 +348,7 @@ interface Payload {
         const entry = arr[0];
         const payload: Payload = {
           fileName: entry.fileName,
-          previewUrl: entry.previewUrl || null,
+          previewUrl: entry.previewUrl || entry.thumbUrl || null,
           isImage: entry.kind === 'image',
           result: entry.result,
         };

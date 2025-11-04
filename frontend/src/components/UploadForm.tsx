@@ -75,10 +75,11 @@ export default function UploadForm() {
     }
 
     // Helper: build result URL with eid or error
-    const goToResult = (opts: { eid?: string; error?: string }) => {
+    const goToResult = (opts: { eid?: string; error?: string; payloadBase64?: string }) => {
       const url = new URL(window.location.origin + '/result.html');
       if (opts.eid) url.searchParams.set('eid', opts.eid);
       if (opts.error) url.searchParams.set('error', opts.error);
+      if (opts.payloadBase64) url.searchParams.set('p', opts.payloadBase64);
       window.location.href = url.toString();
     };
 
@@ -90,8 +91,23 @@ export default function UploadForm() {
       if (eid) {
         goToResult({ eid });
       } else {
-        // Fallback if storage fails: show error on result page
-        goToResult({ error: encodeURIComponent('Could not persist result locally') });
+        // Fallback if storage fails: inline minimal payload via URL param 'p'
+        const minimal = {
+          fileName: file.name,
+          previewUrl: null as string | null, // avoid heavy data in URL
+          isImage,
+          result: {
+            score: res?.score ?? 0,
+            verdict: (res as any)?.verdict ?? 'unknown',
+            reason: (res as any)?.reason ?? 'Analysis complete.'
+          }
+        };
+        try {
+          const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(minimal))));
+          goToResult({ payloadBase64: encoded });
+        } catch {
+          goToResult({ error: encodeURIComponent('Analysis complete, but could not display result') });
+        }
       }
     } catch (err: unknown) {
       type ApiErr = { response?: { data?: { detail?: string } }; message?: string };
@@ -107,7 +123,22 @@ export default function UploadForm() {
         if (eid) {
           goToResult({ eid });
         } else {
-          goToResult({ error: encodeURIComponent('Could not persist local result') });
+          const minimal = {
+            fileName: file.name,
+            previewUrl: null as string | null,
+            isImage,
+            result: {
+              score: (localRes as any)?.score ?? 0,
+              verdict: (localRes as any)?.verdict ?? 'unknown',
+              reason: (localRes as any)?.reason ?? 'Offline analysis complete.'
+            }
+          };
+          try {
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(minimal))));
+            goToResult({ payloadBase64: encoded });
+          } catch {
+            goToResult({ error: encodeURIComponent('Analysis complete, but could not display result') });
+          }
         }
       } catch {
         // If even fallback fails, navigate to error view
@@ -155,27 +186,67 @@ export default function UploadForm() {
       if (isImage && previewDataUrl && previewDataUrl.startsWith('data:image')) {
         try { thumb = await createImageThumbnail(previewDataUrl, 180); } catch { thumb = null; }
       }
-      const entry = {
+      // Use thumb only for images to avoid quota issues. Avoid storing PDF preview data.
+      const safePreview: string | null = isImage ? (thumb || null) : (isPdf ? null : previewDataUrl);
+
+      let entry: any = {
         id,
         ts: Date.now(),
         fileName: file.name,
         kind: isImage ? 'image' : (isPdf ? 'pdf' : 'text'),
-        previewUrl: previewDataUrl,
+        previewUrl: safePreview,
         thumbUrl: thumb,
         result,
       };
       const key = 'pg_uploads';
       const raw = localStorage.getItem(key);
-      const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
-      arr.unshift(entry);
-      while (arr.length > 15) arr.pop();
-      localStorage.setItem(key, JSON.stringify(arr));
-      return id;
+      let arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
+      const tryPersist = (a: any[]) => { localStorage.setItem(key, JSON.stringify(a)); };
+
+      const attempt = () => {
+        const a = [entry, ...arr];
+        while (a.length > 15) a.pop();
+        tryPersist(a);
+      };
+
+      try {
+        attempt();
+        return id;
+      } catch {
+        try {
+          // Degrade: remove preview and thumb
+          entry = { id, ts: entry.ts, fileName: entry.fileName, kind: entry.kind, previewUrl: null, thumbUrl: null, result };
+          const a = [entry, ...arr];
+          while (a.length > 15) a.pop();
+          tryPersist(a);
+          return id;
+        } catch {
+          // Evict oldest and retry a few times
+          for (let i = 0; i < 5 && aLength(arr) > 0; i++) {
+            try {
+              arr = arr.slice(0, Math.max(0, arr.length - 1));
+              const a2 = [entry, ...arr];
+              while (a2.length > 15) a2.pop();
+              tryPersist(a2);
+              return id;
+            } catch {}
+          }
+          // Final minimal record attempt
+          try {
+            const minimal = [{ id, ts: Date.now(), fileName: file.name, kind: isImage ? 'image' : (isPdf ? 'pdf' : 'text'), result }];
+            tryPersist(minimal);
+            return id;
+          } catch {
+            return null;
+          }
+        }
+      }
     } catch {
-      // ignore persistence errors
       return null;
     }
   }
+
+  function aLength(a: any[]): number { try { return Array.isArray(a) ? a.length : 0; } catch { return 0; } }
 
   // Removed old buildResultHtml helper: we now navigate to /result.html?id=... and render via src/result.ts
 
