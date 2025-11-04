@@ -449,11 +449,22 @@ function buildSitemap(manifest) {
   writeFile(path.join(SEO_DIR, 'sitemap.xml'), xml);
 }
 
+function buildRobotsTxt() {
+  const lines = [
+    'User-agent: *',
+    'Allow: /',
+    'Sitemap: https://proofguard-f2d9b75828b7.herokuapp.com/sitemap.xml',
+    ''
+  ];
+  writeFile(path.join(SEO_DIR, 'robots.txt'), lines.join('\n'));
+}
+
 function main() {
   ensureDir(SEO_DIR);
   const manifest = generateArticles(1000);
   buildIndex(manifest);
   buildSitemap(manifest);
+  buildRobotsTxt();
   console.log(`Generated 1000 SEO pages at ${SEO_DIR} (manifest and sitemap included)`);
 }
 
