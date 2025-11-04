@@ -1,0 +1,6 @@
+# Minimal deps to run the API on Heroku
+fastapi
+uvicorn
+python-multipart
+pillow
+pdfminer.six
