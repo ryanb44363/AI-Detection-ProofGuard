@@ -1,0 +1,11 @@
+{
+  "name": "ProofGuard",
+  "description": "Serve FastAPI backend and Vite-built frontend on a single Heroku app.",
+  "env": {
+    "PYTHONUNBUFFERED": { "value": "1" }
+  },
+  "buildpacks": [
+    { "url": "heroku/nodejs" },
+    { "url": "heroku/python" }
+  ]
+}

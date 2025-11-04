@@ -1,6 +1,5 @@
 # Exclude heavy or unused assets from the Heroku slug
 ai-auth/
-frontend/
 **/__pycache__/
 **/*.pyc
 node_modules/
