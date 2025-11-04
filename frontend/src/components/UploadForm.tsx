@@ -75,33 +75,25 @@ export default function UploadForm() {
       }
     }
 
-    // Helper: navigate to dedicated result page without blob URLs
-    const navigateToResult = (payload: {
-      fileName: string;
-      previewUrl: string | null;
-      isImage: boolean;
-      isPdf?: boolean;
-      result?: ApiAnalysisResult;
-      error?: string;
-    }) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-      try { localStorage.setItem(`result:${id}`, JSON.stringify(payload)); } catch {}
+    // Helper: build result URL with eid or error
+    const goToResult = (opts: { eid?: string; error?: string }) => {
       const url = new URL(window.location.origin + '/result.html');
-      url.searchParams.set('id', id);
+      if (opts.eid) url.searchParams.set('eid', opts.eid);
+      if (opts.error) url.searchParams.set('error', opts.error);
       window.location.href = url.toString();
     };
 
     try {
       const res = await analyzeFile(file);
       // Save to local uploads history (successful server analysis)
-      try { await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: res }); } catch {}
-      navigateToResult({
-        fileName: file.name,
-        previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
-        isImage,
-        isPdf,
-        result: res,
-      });
+      let eid: string | null = null;
+      try { eid = await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: res }); } catch {}
+      if (eid) {
+        goToResult({ eid });
+      } else {
+        // Fallback if storage fails: show error on result page
+        goToResult({ error: encodeURIComponent('Could not persist result locally') });
+      }
     } catch (err: unknown) {
       type ApiErr = { response?: { data?: { detail?: string } }; message?: string };
       const e = err as ApiErr;
@@ -111,23 +103,16 @@ export default function UploadForm() {
       try {
         const localRes = await localAnalyzeFile(file, previewDataUrl, isImage);
         // Save to local uploads history (local analysis)
-        try { await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: localRes as any }); } catch {}
-        navigateToResult({
-          fileName: file.name,
-          previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
-          isImage,
-          isPdf,
-          result: localRes,
-        });
+        let eid: string | null = null;
+        try { eid = await saveLocalUpload({ file, previewDataUrl, isImage, isPdf, result: localRes as any }); } catch {}
+        if (eid) {
+          goToResult({ eid });
+        } else {
+          goToResult({ error: encodeURIComponent('Could not persist local result') });
+        }
       } catch {
         // If even fallback fails, navigate to error view
-        navigateToResult({
-          fileName: file.name,
-          previewUrl: isImage || isPdf || isTextLike ? previewDataUrl : null,
-          isImage,
-          isPdf,
-          error: msg,
-        });
+        goToResult({ error: encodeURIComponent(msg) });
       }
     } finally {
       setLoading(false);
@@ -163,7 +148,7 @@ export default function UploadForm() {
     });
   }
 
-  async function saveLocalUpload(opts: { file: File; previewDataUrl: string | null; isImage: boolean; isPdf: boolean; result: any }) {
+  async function saveLocalUpload(opts: { file: File; previewDataUrl: string | null; isImage: boolean; isPdf: boolean; result: any }): Promise<string | null> {
     try {
       const { file, previewDataUrl, isImage, isPdf, result } = opts;
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -186,8 +171,10 @@ export default function UploadForm() {
       arr.unshift(entry);
       while (arr.length > 15) arr.pop();
       localStorage.setItem(key, JSON.stringify(arr));
+      return id;
     } catch {
       // ignore persistence errors
+      return null;
     }
   }
 

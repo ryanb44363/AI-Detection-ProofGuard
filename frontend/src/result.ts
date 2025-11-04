@@ -49,6 +49,8 @@ interface Payload {
 
 (function main() {
   const id = getQueryParam('id');
+  const eid = getQueryParam('eid');
+  const errParam = getQueryParam('error');
   const key = id ? `result:${id}` : '';
 
   function render(payload: Payload | null) {
@@ -292,6 +294,36 @@ interface Payload {
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  // If there's an explicit error param, show error immediately
+  if (errParam) {
+    const msg = decodeURIComponent(errParam);
+    (qs('error-msg')).textContent = msg || 'Unknown error';
+    qs('error').classList.remove('hidden');
+    qs('content').classList.add('hidden');
+    qs('loading').classList.add('hidden');
+    return;
+  }
+
+  // If we have an eid, render from pg_uploads directly
+  if (!id && eid) {
+    try {
+      const raw = localStorage.getItem('pg_uploads');
+      const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
+      const entry = arr.find((x: any) => x && x.id === eid);
+      if (entry) {
+        const payload: Payload = {
+          fileName: entry.fileName,
+          previewUrl: entry.previewUrl || null,
+          isImage: entry.kind === 'image',
+          result: entry.result,
+        };
+        render(payload);
+        return;
+      }
+    } catch {}
+    // If eid not found, fall through to latest or empty
+  }
+
   // If no id, try to fallback to the latest upload entry
   if (!id) {
     try {
@@ -322,6 +354,22 @@ interface Payload {
   window.addEventListener('storage', (e) => {
     if (id && e.key === key) {
       render(getPayload());
+    }
+    if (!id && eid && e.key === 'pg_uploads') {
+      try {
+        const raw = localStorage.getItem('pg_uploads');
+        const arr = Array.isArray(JSON.parse(raw || 'null')) ? JSON.parse(raw || '[]') : [];
+        const entry = arr.find((x: any) => x && x.id === eid);
+        if (entry) {
+          const payload: Payload = {
+            fileName: entry.fileName,
+            previewUrl: entry.previewUrl || null,
+            isImage: entry.kind === 'image',
+            result: entry.result,
+          };
+          render(payload);
+        }
+      } catch {}
     }
   });
 
