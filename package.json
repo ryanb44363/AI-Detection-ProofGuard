@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "heroku-prebuild": "npm install --prefix frontend",
+    "heroku-prebuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend",
     "heroku-postbuild": "VITE_API_URL=/api npm run build --prefix frontend && rm -rf backend/static && mkdir -p backend/static && cp -R frontend/dist/* backend/static/ && find frontend -maxdepth 1 -type f -name '*.html' ! -name 'index.html' -exec cp {} backend/static/ ';'"
   }
 }
