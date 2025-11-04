@@ -89,6 +89,11 @@ if os.path.isdir(STATIC_DIR):
             return FileResponse(uploads_path, media_type="text/html")
         return {"status": "ok", "message": "Frontend build missing"}
 
+    # Redirect extensionless blog path to the static blog.html
+    @app.get("/blog")
+    def redirect_blog():
+        return RedirectResponse(url="/blog.html", status_code=308)
+
     # Serve all static assets from backend/static
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 else:
