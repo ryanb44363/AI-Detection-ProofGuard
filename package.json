@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "heroku-prebuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend",
-  "heroku-postbuild": "node frontend/scripts/generate-seo.cjs && VITE_API_URL=/api npm run build --prefix frontend && rm -rf backend/static && mkdir -p backend/static && cp -R frontend/dist/* backend/static/ && mkdir -p backend/static/seo && cp -R frontend/seo/* backend/static/seo/ && cp frontend/seo/sitemap_index.xml backend/static/sitemap_index.xml || true && cp frontend/seo/sitemap_index.xml backend/static/sitemap.xml || true && cp frontend/seo/robots.txt backend/static/robots.txt || true",
+  "heroku-postbuild": "node frontend/scripts/generate-seo.cjs && VITE_API_URL=/api npm run build --prefix frontend && rm -rf backend/static && mkdir -p backend/static && cp -R frontend/dist/* backend/static/ && mkdir -p backend/static/seo && cp -R frontend/seo/* backend/static/seo/ && cp frontend/sitemap_index.xml backend/static/sitemap_index.xml || true && cp frontend/sitemap.xml backend/static/sitemap.xml || true && cp frontend/robots.txt backend/static/robots.txt || true && cp frontend/page-sitemap.xml backend/static/page-sitemap.xml || true && cp frontend/post-sitemap.xml backend/static/post-sitemap.xml || true",
     "generate:seo": "node frontend/scripts/generate-seo.cjs"
   }
 }

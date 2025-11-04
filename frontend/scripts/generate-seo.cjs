@@ -517,7 +517,9 @@ function buildYoastSitemaps(manifest) {
   // Core pages (akin to "pages" in Yoast)
   const corePages = [
     '/',
+    '/index.html',
     '/uploads.html',
+    '/result.html',
     '/api.html',
     '/plugins.html',
     '/pricing.html',
@@ -534,6 +536,8 @@ function buildYoastSitemaps(manifest) {
     pageEntries.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('') +
     `</urlset>`;
   writeFile(path.join(SEO_DIR, 'page-sitemap.xml'), pageXml);
+  // Also place a root-level copy for standard discovery
+  writeFile(path.join(ROOT, 'page-sitemap.xml'), pageXml);
 
   // Post sitemap (our generated SEO articles)
   const postEntries = manifest.map(m => ({ loc: base + m.url, lastmod: (m.lastmod || today).slice(0, 10) }));
@@ -550,19 +554,24 @@ function buildYoastSitemaps(manifest) {
       chunk.map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('') +
       `</urlset>`;
     writeFile(path.join(SEO_DIR, name), xml);
+    // Root-level post sitemap copy (single or chunked; we use same name)
+    writeFile(path.join(ROOT, name), xml);
     postSitemaps.push({ name, lastmod: chunk[0]?.lastmod || today });
   }
 
   // Sitemap index
+  // Prefer root-level sitemap locations
   const sitemapIndexItems = [
-    { loc: `${base}/seo/page-sitemap.xml`, lastmod: today },
-    ...postSitemaps.map(ps => ({ loc: `${base}/seo/${ps.name}`, lastmod: ps.lastmod }))
+    { loc: `${base}/page-sitemap.xml`, lastmod: today },
+    ...postSitemaps.map(ps => ({ loc: `${base}/${ps.name}`, lastmod: ps.lastmod }))
   ];
   const indexXml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
     sitemapIndexItems.map(s => `<sitemap><loc>${s.loc}</loc><lastmod>${s.lastmod}</lastmod></sitemap>`).join('') +
     `</sitemapindex>`;
+  // Write both in SEO folder (for browsing) and root (for discovery)
   writeFile(path.join(SEO_DIR, 'sitemap_index.xml'), indexXml);
+  writeFile(path.join(ROOT, 'sitemap_index.xml'), indexXml);
 
   // Back-compat simple sitemap.xml (optional): point to the same pages+posts combined
   const simpleCombined = `<?xml version="1.0" encoding="UTF-8"?>\n` +
@@ -570,6 +579,7 @@ function buildYoastSitemaps(manifest) {
     [...pageEntries, ...postEntries].map(u => `<url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('') +
     `</urlset>`;
   writeFile(path.join(SEO_DIR, 'sitemap.xml'), simpleCombined);
+  writeFile(path.join(ROOT, 'sitemap.xml'), simpleCombined);
 }
 
 function buildRobotsTxt() {
@@ -580,7 +590,9 @@ function buildRobotsTxt() {
     `Sitemap: ${base}/sitemap_index.xml`,
     ''
   ];
+  // Write robots in both places; root is the canonical
   writeFile(path.join(SEO_DIR, 'robots.txt'), lines.join('\n'));
+  writeFile(path.join(ROOT, 'robots.txt'), lines.join('\n'));
 }
 
 function main() {
