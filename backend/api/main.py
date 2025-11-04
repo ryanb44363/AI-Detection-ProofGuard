@@ -30,7 +30,8 @@ class CanonicalRedirectMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
             # Only enforce when a canonical host is configured
             if CANONICAL_HOST:
-                need_host_redirect = host and host != CANONICAL_HOST and host != f"www.{CANONICAL_HOST}"
+                # Always enforce a single canonical host (no www)
+                need_host_redirect = host and host != CANONICAL_HOST
                 need_https_redirect = scheme != "https"
                 if need_host_redirect or need_https_redirect:
                     url = request.url.replace(netloc=CANONICAL_HOST, scheme="https")
