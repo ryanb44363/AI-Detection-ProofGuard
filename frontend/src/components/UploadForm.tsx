@@ -266,6 +266,32 @@ export default function UploadForm() {
       </div>`
       : "";
 
+    // Pretty-format the backend reason text into a clean bullet list with icons
+    const reasonHTML = (() => {
+      const src = String(reasonText || "");
+      const parts = src.split(/\.(?:\s+|$)/).map(s => s.trim()).filter(Boolean);
+      if (!parts.length) return "";
+      const bullets = parts.map((s) => {
+        let icon = "•";
+        if (/Examined/i.test(s)) icon = "🖼️";
+        else if (/entropy/i.test(s)) icon = "📈";
+        else if (/(EXIF|metadata)/i.test(s)) icon = "🧾";
+        else if (/OCR/i.test(s)) icon = "🔤";
+        else if (/Edge\s+density/i.test(s)) icon = "🧮";
+        else if (/ELA/i.test(s)) icon = "🪞";
+        else if (/Unique\s+color\s+ratio/i.test(s)) icon = "🎨";
+        else if (/Laplacian/i.test(s)) icon = "📐";
+        else if (/Flat-?block/i.test(s)) icon = "🧱";
+        else if (/Brightness/i.test(s)) icon = "💡";
+        else if (/Saturation/i.test(s)) icon = "🎚️";
+        else if (/Skewness/i.test(s)) icon = "📊";
+        else if (/Dark\s+.*Bright/i.test(s)) icon = "🌓";
+        else if (/Missing\s+common\s+EXIF/i.test(s)) icon = "⚠️";
+        return `<li><span class="i">${icon}</span><span>${s}.</span></li>`;
+      }).join("");
+      return `<ul class="reason-list">${bullets}</ul>`;
+    })();
+
     const breakdownRows = (() => {
       const pretty = (k: string) => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       if (scoreBreakdown && Object.keys(scoreBreakdown).length) {
@@ -607,6 +633,10 @@ export default function UploadForm() {
           .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; justify-content:center }
           .title { font-size:22px; font-weight:800; }
           .muted { color:#6b7280; font-size: 12px; }
+          /* Reason bullets */
+          .reason-list{margin:8px 0 0;padding-left:0;list-style:none;color:#374151;font-size:14px;line-height:1.5}
+          .reason-list li{display:grid;grid-template-columns:22px 1fr;align-items:start;gap:8px;margin:6px 0}
+          .reason-list .i{width:22px;text-align:center}
             @media (max-width: 720px){ .nav, .actions-inline { display:none } .mobile-toggle{display:block} .mobile-menu{display:block} }
         </style>
       </head>
@@ -658,7 +688,7 @@ export default function UploadForm() {
             <div class="card">
               ${gauge}
               <div class="title-row"><div class="title">${verdictTitle}</div></div>
-              <p class="reason">${reasonText}</p>
+              ${reasonHTML}
               <div class="actions">
                 <a class="btn" href="${origin}/" onclick="return goBack('${origin}')">Back</a>
                 <a class="btn btn-primary" href="${origin}/">Analyze Another File</a>
